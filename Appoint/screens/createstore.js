@@ -83,22 +83,36 @@ const CreateStore = () => {
   };
 
   const isPhoneNumberValid = (phoneNumber) => {
-    const phoneRegex = /^[0-9]{10}$/;
+    const phoneRegex = /^[6-9][0-9]{9}$/; // Indian mobile numbers start with 6, 7, 8, or 9
     return phoneRegex.test(phoneNumber);
+  };
+
+  const isAadharValid = (aadhar) => {
+    const aadharRegex = /^[0-9]{12}$/;
+    return aadharRegex.test(aadhar);
   };
 
   const isFormValid = () => {
     const { name, fname, type, description, location, phoneNumber, aadharNumber } = formData;
-    if (!name || !fname || !type || !description || !location || !phoneNumber || !aadharNumber) {
-      setAlertConfig({ title: "Error", message: "Please fill in all fields.", type: "error" });
+    
+    if (!name.trim() || !fname.trim() || !type.trim() || !description.trim() || !location.trim()) {
+      setAlertConfig({ title: "Error", message: "Please fill in all general fields.", type: "error" });
       setAlertVisible(true);
       return false;
     }
+    
+    if (!isAadharValid(aadharNumber)) {
+      setAlertConfig({ title: "Error", message: "Please enter a valid 12-digit Aadhaar number.", type: "error" });
+      setAlertVisible(true);
+      return false;
+    }
+
     if (!isPhoneNumberValid(phoneNumber)) {
-      setAlertConfig({ title: "Error", message: "Please enter a valid 10-digit phone number.", type: "error" });
+      setAlertConfig({ title: "Error", message: "Please enter a valid 10-digit mobile number.", type: "error" });
       setAlertVisible(true);
       return false;
     }
+
     return true;
   };
 

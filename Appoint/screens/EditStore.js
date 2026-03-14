@@ -183,6 +183,27 @@ const EditStore = () => {
   };
 
   const handleSubmit = async () => {
+    const phoneRegex = /^[6-9][0-9]{9}$/;
+    const aadharRegex = /^[0-9]{12}$/;
+
+    if (!formData.name.trim() || !formData.location.trim()) {
+      setAlertConfig({ title: "Error", message: "Store Name and Location cannot be empty.", type: "error" });
+      setAlertVisible(true);
+      return;
+    }
+
+    if (formData.phoneNumber && !phoneRegex.test(formData.phoneNumber)) {
+      setAlertConfig({ title: "Error", message: "Please enter a valid 10-digit mobile number.", type: "error" });
+      setAlertVisible(true);
+      return;
+    }
+
+    if (formData.aadharNumber && !aadharRegex.test(formData.aadharNumber)) {
+      setAlertConfig({ title: "Error", message: "Please enter a valid 12-digit Aadhaar number.", type: "error" });
+      setAlertVisible(true);
+      return;
+    }
+
     setSaving(true);
     const form = new FormData();
     Object.keys(formData).forEach((key) => {

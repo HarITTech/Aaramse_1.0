@@ -54,10 +54,22 @@ const RegisterScreen = () => {
   const navigation = useNavigation();
 
   const handleRegister = async () => {
-    if (!name || !email || !password) {
-      Alert.alert('Error', 'Please fill in all fields');
+    // Basic validations
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    
+    if (!name.trim()) {
+      Alert.alert('Error', 'Please enter your full name');
       return;
     }
+    if (!emailRegex.test(email)) {
+      Alert.alert('Error', 'Please enter a valid email address');
+      return;
+    }
+    if (password.length < 6) {
+      Alert.alert('Error', 'Password must be at least 6 characters long');
+      return;
+    }
+
     setLoading(true);
     try {
       await axios.post(`${API_BASE_URL}/api/auth/register`, { name, email, password });

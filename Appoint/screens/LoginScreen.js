@@ -31,10 +31,18 @@ const LoginScreen = () => {
   const navigation = useNavigation();
 
   const handleLogin = async () => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
     if (!email || !password) {
-      Alert.alert('Required', 'Please fill in all fields');
+      Alert.alert('Required', 'Please enter both email and password');
       return;
     }
+
+    if (!emailRegex.test(email)) {
+      Alert.alert('Error', 'Please enter a valid email address');
+      return;
+    }
+
     setLoading(true);
     try {
       const response = await axios.post(`${API_BASE_URL}/api/auth/login`, { email, password });

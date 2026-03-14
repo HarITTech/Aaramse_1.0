@@ -93,8 +93,21 @@ const EditProfile = () => {
   };
 
   const handleSave = async () => {
-    if (!formData.name || !formData.email) {
-      Alert.alert("Required Fields", "Name and Email cannot be empty.");
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const phoneRegex = /^[6-9][0-9]{9}$/;
+
+    if (!formData.name.trim()) {
+      Alert.alert("Error", "Please enter your name.");
+      return;
+    }
+
+    if (!emailRegex.test(formData.email)) {
+      Alert.alert("Error", "Please enter a valid email address.");
+      return;
+    }
+
+    if (formData.phone && !phoneRegex.test(formData.phone)) {
+      Alert.alert("Error", "Please enter a valid 10-digit mobile number.");
       return;
     }
 
