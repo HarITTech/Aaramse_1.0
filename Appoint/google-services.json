@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "947334273800",
+    "project_id": "aaramse-642f4",
+    "storage_bucket": "aaramse-642f4.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:947334273800:android:e306838495cb6bfd03aabd",
+        "android_client_info": {
+          "package_name": "com.mahesh140.Aaramse"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA95gfEVaw7CFgXVL0jI_shrU9DvmWOLr8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
