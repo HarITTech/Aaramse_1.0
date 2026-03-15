@@ -25,6 +25,7 @@ import { API_BASE_URL } from "../config/api";
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Animatable from 'react-native-animatable';
 import CustomAlert from '../components/CustomAlert';
+import { useLanguage } from "../middleware/LanguageContext";
 
 const { width } = Dimensions.get("window");
 
@@ -42,6 +43,7 @@ const Profile = () => {
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertConfig, setAlertConfig] = useState({ title: '', message: '', type: 'info', onConfirm: null, cancelText: null });
   const [isOffline, setIsOffline] = useState(false);
+  const { language, changeLanguage, t } = useLanguage();
 
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener(state => {
@@ -128,7 +130,7 @@ const Profile = () => {
 
   const handleLogout = () => {
     setAlertConfig({
-      title: "Sign Out",
+      title: t('logout'),
       message: "Are you sure you want to log out of AaramSe?",
       type: "warning",
       buttonText: "Yes, Logout",
@@ -139,6 +141,19 @@ const Profile = () => {
       }
     });
     setAlertVisible(true);
+  };
+
+  const handleLanguageChange = () => {
+    Alert.alert(
+      t('selectLanguage'),
+      null,
+      [
+        { text: 'English', onPress: () => changeLanguage('en'), style: language === 'en' ? 'default' : 'cancel' },
+        { text: 'हिंदी (Hindi)', onPress: () => changeLanguage('hi'), style: language === 'hi' ? 'default' : 'cancel' },
+        { text: 'मराठी (Marathi)', onPress: () => changeLanguage('mr'), style: language === 'mr' ? 'default' : 'cancel' },
+        { text: t('cancel'), style: 'cancel' }
+      ]
+    );
   };
 
   const handleImageUpdate = async () => {
@@ -277,7 +292,7 @@ const Profile = () => {
              <View className="flex-row justify-around">
                 <View className="items-center">
                    <Text className="text-blue-900 font-black text-xl">{stores.length}</Text>
-                   <Text className="text-slate-400 text-[9px] font-black uppercase tracking-[2px] mt-1">My Stores</Text>
+                   <Text className="text-slate-400 text-[9px] font-black uppercase tracking-[2px] mt-1">{t('myStores') || 'My Stores'}</Text>
                 </View>
                 <View className="w-[1px] h-12 bg-slate-100" />
                 <View className="items-center">
@@ -346,8 +361,9 @@ const Profile = () => {
           )}
 
           <Text className="text-slate-400 text-[10px] font-black uppercase tracking-[3px] mb-6 ml-4">Account Settings</Text>
-          <MenuItem icon="account-edit-outline" label="Edit Profile Details" onPress={() => navigation.navigate("EditProfile")} color="#3b82f6" />
-          <MenuItem icon="history" label="My Booking History" onPress={() => navigation.navigate("History")} color="#6366f1" />
+          <MenuItem icon="account-edit-outline" label={t('editProfile')} onPress={() => navigation.navigate("EditProfile")} color="#3b82f6" />
+          <MenuItem icon="history" label={t('myBookings')} onPress={() => navigation.navigate("History")} color="#6366f1" />
+          <MenuItem icon="translate" label={t('changeLanguage')} onPress={handleLanguageChange} color="#f43f5e" />
           
           <Text className="text-slate-400 text-[10px] font-black uppercase tracking-[3px] mt-8 mb-6 ml-4">Business Features</Text>
           <MenuItem icon="store-plus-outline" label="Register Your Shop" onPress={() => navigation.navigate("CreateStore")} color="#10b981" />
@@ -365,7 +381,7 @@ const Profile = () => {
             className="mt-12 bg-red-50 p-6 rounded-[32px] flex-row items-center justify-center border border-red-100 mb-12 shadow-sm shadow-red-500/10"
           >
              <MaterialCommunityIcons name="logout-variant" size={24} color="#ef4444" />
-             <Text className="text-red-600 font-black text-lg ml-3 tracking-widest uppercase">Sign Out</Text>
+             <Text className="text-red-600 font-black text-lg ml-3 tracking-widest uppercase">{t('logout')}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

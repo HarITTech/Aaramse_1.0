@@ -4,6 +4,7 @@ import { StatusBar } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import AppNavigator from './middleware/AppNavigator'; // Adjust path if needed
 import { AuthProvider } from './middleware/AuthContext'; // Adjust path if needed
+import { LanguageProvider } from './middleware/LanguageContext';
 
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
@@ -117,20 +118,13 @@ export default function App() {
   }, []);
 
   return (
-    <AuthProvider>
-      <StatusBar  hidden={false} translucent={true} />
-      <NavigationContainer>
-        <AppNavigator />
-        {/* Display push token and notifications */}
-        {/* <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <Text>Your Expo push token: {expoPushToken}</Text>
-          <View style={{ alignItems: 'center', justifyContent: 'center' }}>
-            <Text>Title: {notification?.request.content.title} </Text>
-            <Text>Body: {notification?.request.content.body}</Text>
-            <Text>Data: {notification ? JSON.stringify(notification.request.content.data) : ''}</Text>
-          </View>
-        </View> */}
-      </NavigationContainer>
-    </AuthProvider>
+    <LanguageProvider>
+      <AuthProvider>
+        <StatusBar  hidden={false} translucent={true} />
+        <NavigationContainer>
+          <AppNavigator />
+        </NavigationContainer>
+      </AuthProvider>
+    </LanguageProvider>
   );
 }

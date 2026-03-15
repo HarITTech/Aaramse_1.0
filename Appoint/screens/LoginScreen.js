@@ -26,6 +26,7 @@ import haritLogo from '../assets/harit_logo.png';
 const LoginScreen = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigation = useNavigation();
@@ -110,8 +111,15 @@ const LoginScreen = () => {
                     placeholderTextColor="#475569"
                     value={password}
                     onChangeText={setPassword}
-                    secureTextEntry
+                    secureTextEntry={!showPassword}
                   />
+                  <TouchableOpacity onPress={() => setShowPassword(!showPassword)} className="p-2">
+                    <MaterialCommunityIcons 
+                      name={showPassword ? "eye-off-outline" : "eye-outline"} 
+                      size={16} 
+                      color="#60a5fa" 
+                    />
+                  </TouchableOpacity>
                 </View>
               </View>
 

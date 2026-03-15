@@ -26,7 +26,7 @@ import haritLogo from '../assets/harit_logo.png';
 const { width } = Dimensions.get('window');
 
 // Compact Input for Single Page View
-const RegistrationInput = ({ icon, label, placeholder, value, onChangeText, secureTextEntry = false, keyboardType = 'default' }) => (
+const RegistrationInput = ({ icon, label, placeholder, value, onChangeText, secureTextEntry = false, keyboardType = 'default', showPassword = false, onTogglePassword = null }) => (
   <View className="mb-3">
     <Text className="text-slate-500 text-[8px] font-bold uppercase tracking-[1px] mb-1 ml-1">{label}</Text>
     <View className="flex-row items-center bg-white/5 border border-white/10 rounded-xl px-3 h-11">
@@ -37,11 +37,20 @@ const RegistrationInput = ({ icon, label, placeholder, value, onChangeText, secu
         placeholderTextColor="#475569"
         value={value}
         onChangeText={onChangeText}
-        secureTextEntry={secureTextEntry}
+        secureTextEntry={secureTextEntry && !showPassword}
         keyboardType={keyboardType}
         autoCapitalize={keyboardType === 'email-address' ? 'none' : 'sentences'}
         style={{ paddingVertical: 0 }}
       />
+      {secureTextEntry && onTogglePassword && (
+        <TouchableOpacity onPress={onTogglePassword} className="p-2">
+          <MaterialCommunityIcons 
+            name={showPassword ? "eye-off-outline" : "eye-outline"} 
+            size={15} 
+            color="#10b981" 
+          />
+        </TouchableOpacity>
+      )}
     </View>
   </View>
 );
@@ -50,6 +59,7 @@ const RegisterScreen = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigation = useNavigation();
 
@@ -105,7 +115,7 @@ const RegisterScreen = () => {
                 
                 <RegistrationInput icon="email-outline" label="Email" placeholder="Email" value={email} onChangeText={setEmail} keyboardType="email-address" />
 
-                <RegistrationInput icon="lock-outline" label="Password" placeholder="••••••••" value={password} onChangeText={setPassword} secureTextEntry />
+                <RegistrationInput icon="lock-outline" label="Password" placeholder="••••••••" value={password} onChangeText={setPassword} secureTextEntry showPassword={showPassword} onTogglePassword={() => setShowPassword(!showPassword)} />
 
                 <TouchableOpacity 
                   onPress={handleRegister}

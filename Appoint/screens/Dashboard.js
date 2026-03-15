@@ -26,6 +26,7 @@ import { API_BASE_URL } from "../config/api";
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Animatable from 'react-native-animatable';
 import NetInfo from "@react-native-community/netinfo";
+import { useLanguage } from "../middleware/LanguageContext";
 
 const { width } = Dimensions.get("window");
 
@@ -56,6 +57,7 @@ const Dashboard = () => {
   const [scanned, setScanned] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(null);
 
+  const { language, t } = useLanguage();
   const sidebarTranslate = useRef(new Animated.Value(-width)).current;
   const [isOffline, setIsOffline] = useState(false);
 
@@ -161,7 +163,7 @@ const Dashboard = () => {
             <MaterialCommunityIcons name="menu" size={24} color="#1e40af" />
           </TouchableOpacity>
           <View>
-            <Text className="text-gray-400 text-[9px] font-bold uppercase tracking-[2px]">Good Day</Text>
+            <Text className="text-gray-400 text-[9px] font-bold uppercase tracking-[2px]">{t('goodDay')}</Text>
             <Text className="text-blue-900 text-base font-black">{userDetails?.name?.split(' ')[0] || "Guest"} 👋</Text>
           </View>
         </View>
@@ -181,6 +183,17 @@ const Dashboard = () => {
           </TouchableOpacity>
         </View>
       </LinearGradient>
+
+      {/* Live in Nanded Banner */}
+      <Animatable.View 
+        animation="slideInDown" 
+        className="bg-blue-600 px-5 py-1.5 flex-row items-center justify-center border-b border-blue-500 shadow-sm"
+      >
+        <MaterialCommunityIcons name="broadcast" size={14} color="#fff" />
+        <Text className="text-white font-black text-[9px] uppercase tracking-[2px] ml-2">
+          {t('liveInNanded')}
+        </Text>
+      </Animatable.View>
 
       <ScrollView 
         showsVerticalScrollIndicator={false}
@@ -208,19 +221,19 @@ const Dashboard = () => {
                 <View className="bg-emerald-500/20 self-start px-3 py-1 rounded-full border border-emerald-500/30 mb-3">
                   <Text className="text-emerald-400 text-[8px] font-black uppercase tracking-[2px]">Owner Platform</Text>
                 </View>
-                <Text className="text-white text-xl font-black mb-1">Expand Your Reach</Text>
-                <Text className="text-slate-400 text-[11px] font-medium leading-4 mb-5">List your shop, manage queues, and grow your business digitally with AaramSe.</Text>
+                <Text className="text-white text-xl font-black mb-1">{t('expandReach')}</Text>
+                <Text className="text-slate-400 text-[11px] font-medium leading-4 mb-5">{t('expandReachDesc')}</Text>
                 
                 <TouchableOpacity 
                     className="bg-white self-start py-3 px-6 rounded-2xl shadow-lg shadow-black/20"
                     onPress={() => {
                         Alert.alert(
-                          "Business Registration",
+                          t('confirm'),
                           "Are you sure you want to register your business on AaramSe? This will create a public profile for your store.",
                           [
-                            { text: "Not Now", style: "cancel" },
+                            { text: t('cancel'), style: "cancel" },
                             { 
-                              text: "Yes, Let's Go", 
+                              text: t('confirm'), 
                               style: "default",
                               onPress: () => navigation.navigate("CreateStore")
                             }
@@ -229,7 +242,7 @@ const Dashboard = () => {
                     }}
                 >
                     <View className="flex-row items-center">
-                        <Text className="text-slate-900 font-black text-xs mr-2">PARTNER WITH US</Text>
+                        <Text className="text-slate-900 font-black text-xs mr-2">{t('partnerWithUs')}</Text>
                         <MaterialCommunityIcons name="arrow-right" size={16} color="#0f172a" />
                     </View>
                 </TouchableOpacity>

@@ -22,6 +22,7 @@ import * as Animatable from 'react-native-animatable';
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import SuccessPopup from './SuccessPopup';
 import CustomAlert from "../components/CustomAlert";
+import { useLanguage } from "../middleware/LanguageContext";
 
 // Moved outside to fix keyboard focus issue
 const InputField = ({ 
@@ -69,6 +70,7 @@ const InputField = ({
 
 const CreateStore = () => {
   const navigation = useNavigation();
+  const { t } = useLanguage();
   const [formData, setFormData] = useState({
     name: '',
     fname: '',
@@ -248,20 +250,20 @@ const CreateStore = () => {
             <TouchableOpacity onPress={() => navigation.goBack()} className="mb-4 w-10 h-10 bg-white items-center justify-center rounded-xl shadow-sm border border-slate-100">
               <MaterialCommunityIcons name="chevron-left" size={24} color="#1e293b" />
             </TouchableOpacity>
-            <Text className="text-3xl font-black text-slate-900 mb-1">Register Shop</Text>
-            <Text className="text-slate-500 font-medium mb-8 text-base">Grow your business with the <Text className="text-blue-600 font-bold">आरामSe</Text> digital platform.</Text>
+            <Text className="text-3xl font-black text-slate-900 mb-1">{t('registerShop')}</Text>
+            <Text className="text-slate-500 font-medium mb-8 text-base">{t('growBusiness')}</Text>
           </Animatable.View>
 
           <Animatable.View animation="fadeInUp" delay={200}>
             <View className="bg-white p-6 rounded-[32px] shadow-sm border border-slate-100 mb-8">
               <Text className="text-slate-900 font-black text-lg mb-6 flex-row items-center">
-                <MaterialCommunityIcons name="information" size={20} color="#3b82f6" /> Basic Details
+                <MaterialCommunityIcons name="information" size={20} color="#3b82f6" /> {t('basicDetails')}
               </Text>
               
-              <InputField icon="storefront-outline" label="Store Name" placeholder="Ex: Premium Saloon" value={formData.name} onChangeText={(v) => handleInputChange('name', v)} />
-              <InputField icon="tag-outline" label="Store Type" placeholder="Hospital, Hotel, Saloon..." value={formData.type} onChangeText={(v) => handleInputChange('type', v)} />
-              <InputField icon="account-outline" label="Owner Name" placeholder="Full legal name" value={formData.fname} onChangeText={(v) => handleInputChange('fname', v)} />
-              <InputField icon="map-marker-outline" label="Location" placeholder="Full address" value={formData.location} onChangeText={(v) => handleInputChange('location', v)} />
+              <InputField icon="storefront-outline" label={t('storeName')} placeholder="Ex: Premium Saloon" value={formData.name} onChangeText={(v) => handleInputChange('name', v)} />
+              <InputField icon="tag-outline" label={t('storeType')} placeholder="Hospital, Hotel, Saloon..." value={formData.type} onChangeText={(v) => handleInputChange('type', v)} />
+              <InputField icon="account-outline" label={t('ownerName')} placeholder="Full legal name" value={formData.fname} onChangeText={(v) => handleInputChange('fname', v)} />
+              <InputField icon="map-marker-outline" label={t('location')} placeholder="Full address" value={formData.location} onChangeText={(v) => handleInputChange('location', v)} />
             </View>
 
             <View className="bg-white p-6 rounded-[32px] shadow-sm border border-slate-100 mb-8">
@@ -324,24 +326,24 @@ const CreateStore = () => {
               </View>
             </View>
 
-            <TouchableOpacity 
-              onPress={handleSubmit}
-              disabled={loading}
-              className="rounded-3xl overflow-hidden shadow-xl shadow-blue-500/30 mb-10"
-            >
-              <LinearGradient
-                colors={['#1e40af', '#3b82f6']}
-                start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-                className="py-5 items-center justify-center flex-row"
+              <TouchableOpacity 
+                onPress={handleSubmit}
+                disabled={loading}
+                className="rounded-3xl overflow-hidden shadow-xl shadow-blue-500/30 mb-10"
               >
-                {loading ? <ActivityIndicator color="#fff" /> : (
-                  <>
-                    <Text className="text-white font-black text-lg mr-2 tracking-widest">CREATE STORE</Text>
-                    <MaterialCommunityIcons name="check-circle" size={22} color="#fff" />
-                  </>
-                )}
-              </LinearGradient>
-            </TouchableOpacity>
+                <LinearGradient
+                  colors={['#1e40af', '#3b82f6']}
+                  start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+                  className="py-5 items-center justify-center flex-row"
+                >
+                  {loading ? <ActivityIndicator color="#fff" /> : (
+                    <>
+                      <Text className="text-white font-black text-lg mr-2 tracking-widest">{t('createStore')}</Text>
+                      <MaterialCommunityIcons name="check-circle" size={22} color="#fff" />
+                    </>
+                  )}
+                </LinearGradient>
+              </TouchableOpacity>
           </Animatable.View>
         </ScrollView>
       </SafeAreaView>

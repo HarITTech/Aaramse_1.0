@@ -24,6 +24,7 @@ import { API_BASE_URL } from "../config/api";
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Animatable from 'react-native-animatable';
 import CustomAlert from '../components/CustomAlert';
+import { useLanguage } from "../middleware/LanguageContext";
 import QRCode from 'react-native-qrcode-svg';
 import { Modal as RNModal } from 'react-native';
 
@@ -32,6 +33,7 @@ const { width } = Dimensions.get("window");
 const StorePage = () => {
   const route = useRoute();
   const navigation = useNavigation();
+  const { t } = useLanguage();
   const [userId, setUserId] = useState(null);
   const { storeId } = route.params;
   const [storeDetails, setStoreDetails] = useState(null);
