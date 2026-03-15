@@ -81,41 +81,38 @@ export default function App() {
     // Register for push notifications and set the token
     registerForPushNotificationsAsync()
       .then(async token => {
-        setExpoPushToken(token ?? '');
-        if (token) {
-          try {
-            const AsyncStorage = require('@react-native-async-storage/async-storage').default;
-            await AsyncStorage.setItem('expoPushToken', token);
-          } catch (e) {
-            console.error('Failed to save push token to async storage', e);
-          }
+        if (!token) return;
+        setExpoPushToken(token);
+        try {
+          const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+          await AsyncStorage.setItem('expoPushToken', token);
+        } catch (e) {
+          console.error('Failed to save push token', e);
         }
       })
-      .catch((error: any) => setExpoPushToken(`${error}`));
+      .catch((error: any) => {
+        console.warn('Push notification registration skipped:', error.message);
+      });
 
     // Add listener for incoming notifications
-    notificationListener.current = Notifications.addNotificationReceivedListener(notification => {
-      setNotification(notification);
-      // Log title, body, and data from the notification
-      console.log('Notification received!');
-      console.log('Title:', notification.request.content.title);
-      console.log('Body:', notification.request.content.body);
-      console.log('Data:', JSON.stringify(notification.request.content.data));
-    });
+    // Wrapped in a check to avoid errors in Expo Go SDK 53+
+    try {
+      notificationListener.current = Notifications.addNotificationReceivedListener(notification => {
+        setNotification(notification);
+        console.log('Notification received:', notification.request.content.title);
+      });
 
-    // Listener for when a user interacts with a notification (e.g., tapping it)
-    responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {
-      console.log('Notification response:', response);
-    });
-
-    
+      responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {
+        console.log('Notification response:', response);
+      });
+    } catch (e) {
+      console.warn('Notification listeners could not be initialized in this environment.');
+    }
 
     // Cleanup listeners on unmount
     return () => {
-      // `removeNotificationSubscription` was removed from newer `expo-notifications`.
-      // Listener subscriptions expose `.remove()` instead.
-      notificationListener.current?.remove();
-      responseListener.current?.remove();
+      if (notificationListener.current) notificationListener.current.remove();
+      if (responseListener.current) responseListener.current.remove();
     };
   }, []);
 

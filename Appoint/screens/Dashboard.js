@@ -187,26 +187,53 @@ const Dashboard = () => {
         contentContainerStyle={{ paddingBottom: 100 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        {/* Featured Section */}
+        {/* Premium Business Banner for Owners */}
         <Animatable.View animation="fadeIn" className="px-5 py-4">
           <LinearGradient
-            colors={['#326bf3', '#1e40af']}
+            colors={['#1e293b', '#0f172a']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
-            className="rounded-[32px] p-5 shadow-xl"
+            className="rounded-[32px] p-6 shadow-xl relative overflow-hidden"
           >
+            {/* Background pattern */}
+            <MaterialCommunityIcons 
+              name="store-plus" 
+              size={120} 
+              color="rgba(255,255,255,0.05)" 
+              style={{ position: 'absolute', right: -20, bottom: -20 }} 
+            />
+            
             <View className="flex-row justify-between items-center">
               <View className="flex-1">
-                <Text className="text-white text-lg font-black mb-1">Appointment</Text>
-                <Text className="text-blue-50/70 text-[10px] font-bold uppercase tracking-widest">Book instantly</Text>
+                <View className="bg-emerald-500/20 self-start px-3 py-1 rounded-full border border-emerald-500/30 mb-3">
+                  <Text className="text-emerald-400 text-[8px] font-black uppercase tracking-[2px]">Owner Platform</Text>
+                </View>
+                <Text className="text-white text-xl font-black mb-1">Expand Your Reach</Text>
+                <Text className="text-slate-400 text-[11px] font-medium leading-4 mb-5">List your shop, manage queues, and grow your business digitally with AaramSe.</Text>
+                
                 <TouchableOpacity 
-                    className="bg-white mt-4 self-start py-2 px-5 rounded-2xl shadow-lg shadow-blue-500/20"
-                    onPress={() => navigation.navigate("CreateStore")}
+                    className="bg-white self-start py-3 px-6 rounded-2xl shadow-lg shadow-black/20"
+                    onPress={() => {
+                        Alert.alert(
+                          "Business Registration",
+                          "Are you sure you want to register your business on AaramSe? This will create a public profile for your store.",
+                          [
+                            { text: "Not Now", style: "cancel" },
+                            { 
+                              text: "Yes, Let's Go", 
+                              style: "default",
+                              onPress: () => navigation.navigate("CreateStore")
+                            }
+                          ]
+                        );
+                    }}
                 >
-                    <Text className="text-blue-700 font-black text-xs">Partner with us</Text>
+                    <View className="flex-row items-center">
+                        <Text className="text-slate-900 font-black text-xs mr-2">PARTNER WITH US</Text>
+                        <MaterialCommunityIcons name="arrow-right" size={16} color="#0f172a" />
+                    </View>
                 </TouchableOpacity>
               </View>
-              <MaterialCommunityIcons name="calendar-check" size={60} color="rgba(255,255,255,0.15)" style={{ position: 'absolute', right: 0, bottom: -5 }} />
             </View>
           </LinearGradient>
         </Animatable.View>
