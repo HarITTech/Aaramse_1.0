@@ -19,10 +19,6 @@
     }
   },
   "submit": {
-    "production": {
-      "android": {
-        "serviceAccount": "@eas-build/google-services.json"
-      }
-    }
+    "production": {}
   }
 }
