@@ -42,4 +42,4 @@ backend/uploads/*
 
 # Explicitly exclude the firebase admin sdk
 Appoint/aaramse-*.json
-google-services.json
+# google-services.json
