@@ -23,11 +23,15 @@ import { API_BASE_URL } from '../config/api';
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Animatable from 'react-native-animatable';
+import { useTheme } from '../middleware/ThemeContext';
 
 const History = () => {
   const route = useRoute();
   const navigation = useNavigation();
+  const { theme } = useTheme();
   const { storeId: paramStoreId, userId: paramUserId } = route.params || {}; 
+  
+  const isDark = theme === 'dark';
   
   const [history, setHistory] = useState([]);
   const [filteredHistory, setFilteredHistory] = useState([]);
@@ -76,10 +80,6 @@ const History = () => {
       }
     } catch (error) {
       console.error("History fetch error:", error);
-      // Don't alert on 404 (empty history)
-      if (error.response?.status !== 404) {
-        // We could use CustomAlert here if we wanted to be consistent
-      }
       setHistory([]);
       setFilteredHistory([]);
     } finally {
@@ -132,7 +132,6 @@ const History = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
       setFeedbackModalVisible(false);
-      // Optional alert
     } catch (error) {
       console.error("Feedback error:", error);
     } finally {
@@ -144,75 +143,77 @@ const History = () => {
     <Animatable.View 
       animation="fadeInUp" 
       delay={index * 50} 
-      className="bg-white p-6 mb-6 rounded-[32px] shadow-sm border border-slate-100"
+      className={`p-6 mb-6 rounded-[32px] border ${
+        isDark ? 'bg-slate-900 border-slate-800 shadow-none' : 'bg-white border-slate-100 shadow-sm'
+      }`}
     >
       <View className="flex-row justify-between items-start mb-4">
         <View className="flex-1 mr-3">
           <View className="flex-row items-center mb-1">
              <MaterialCommunityIcons name="storefront-outline" size={16} color="#3b82f6" />
-             <Text className="font-black text-slate-900 text-lg ml-2" numberOfLines={1}>
+             <Text className={`font-black text-lg ml-2 ${isDark ? 'text-white' : 'text-slate-900'}`} numberOfLines={1}>
                {item.store?.name || 'Shop Name'}
              </Text>
           </View>
-          <Text className="text-slate-400 text-[10px] font-black uppercase tracking-[1px]">
+          <Text className={`text-[10px] font-black uppercase tracking-[1px] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
              Booked for: {item.name}
           </Text>
         </View>
         <View className={`px-4 py-2 rounded-2xl ${
-          item.status === 'Completed' ? 'bg-emerald-50 border border-emerald-100' : 
-          item.status === 'Canceled' ? 'bg-red-50 border border-red-100' :
-          'bg-amber-50 border border-amber-100'
+          item.status === 'Completed' ? (isDark ? 'bg-emerald-500/10 border border-emerald-500/20' : 'bg-emerald-50 border border-emerald-100') : 
+          item.status === 'Canceled' ? (isDark ? 'bg-red-500/10 border border-red-500/20' : 'bg-red-50 border border-red-100') :
+          (isDark ? 'bg-amber-500/10 border border-amber-500/20' : 'bg-amber-50 border border-amber-100')
         }`}>
            <Text className={`text-[10px] font-black uppercase tracking-widest ${
-             item.status === 'Completed' ? 'text-emerald-600' : 
-             item.status === 'Canceled' ? 'text-red-600' :
-             'text-amber-600'
+             item.status === 'Completed' ? 'text-emerald-500' : 
+             item.status === 'Canceled' ? 'text-red-500' :
+             'text-amber-500'
            }`}>
              {item.status}
            </Text>
         </View>
       </View>
 
-      <View className="h-[1px] bg-slate-50 w-full mb-4" />
+      <View className={`h-[1px] w-full mb-4 ${isDark ? 'bg-slate-800' : 'bg-slate-50'}`} />
 
       <View className="flex-row flex-wrap justify-between">
          <View className="flex-row items-center mb-3 w-1/2">
-            <View className="w-8 h-8 bg-slate-50 rounded-xl items-center justify-center">
-               <MaterialCommunityIcons name="calendar-range" size={16} color="#64748b" />
+            <View className={`w-8 h-8 rounded-xl items-center justify-center ${isDark ? 'bg-slate-950' : 'bg-slate-50'}`}>
+               <MaterialCommunityIcons name="calendar-range" size={16} color={isDark ? "#94a3b8" : "#64748b"} />
             </View>
             <View className="ml-3">
-               <Text className="text-slate-400 text-[8px] font-black uppercase tracking-widest">Appointment Date</Text>
-               <Text className="text-slate-700 font-bold text-xs">
+               <Text className={`text-[8px] font-black uppercase tracking-widest ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Appointment Date</Text>
+               <Text className={`font-bold text-xs ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>
                  {item.slot ? format(new Date(item.slot.date), 'MMM dd, yyyy') : format(new Date(item.bookingTime), 'MMM dd, yyyy')}
                </Text>
             </View>
          </View>
          
          <View className="flex-row items-center mb-3 w-1/2 justify-end">
-            <View className="w-8 h-8 bg-slate-50 rounded-xl items-center justify-center">
-               <MaterialCommunityIcons name="clock-outline" size={16} color="#64748b" />
+            <View className={`w-8 h-8 rounded-xl items-center justify-center ${isDark ? 'bg-slate-950' : 'bg-slate-50'}`}>
+               <MaterialCommunityIcons name="clock-outline" size={16} color={isDark ? "#94a3b8" : "#64748b"} />
             </View>
             <View className="ml-3">
-               <Text className="text-slate-400 text-[8px] font-black uppercase tracking-widest">Time Slot</Text>
-               <Text className="text-slate-700 font-bold text-xs">
+               <Text className={`text-[8px] font-black uppercase tracking-widest ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Time Slot</Text>
+               <Text className={`font-bold text-xs ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>
                  {item.slot ? `${item.slot.startTime} - ${item.slot.endTime}` : 'No Slot'}
                </Text>
             </View>
          </View>
 
          {item.status !== 'Scheduled' && item.completionTime && (
-            <View className="flex-row items-center mt-2 w-full pt-2 border-t border-slate-50 mb-1">
+            <View className={`flex-row items-center mt-2 w-full pt-2 border-t mb-1 ${isDark ? 'border-slate-800' : 'border-slate-50'}`}>
               <MaterialCommunityIcons name="timeline-check-outline" size={12} color="#94a3b8" />
-              <Text className="text-slate-400 text-[9px] font-black uppercase ml-1">
+              <Text className="text-slate-500 text-[9px] font-black uppercase ml-1">
                  {item.status === 'Completed' ? 'Completed at: ' : 'Canceled at: '}
-                 <Text className="text-slate-500">{format(new Date(item.completionTime), 'MMM dd, yyyy | hh:mm a')}</Text>
+                 <Text className="text-slate-450">{format(new Date(item.completionTime), 'MMM dd, yyyy | hh:mm a')}</Text>
               </Text>
             </View>
          )}
 
          {item.documents && item.documents.length > 0 && (
-            <View className="mt-4 w-full pt-4 border-t border-slate-100">
-               <Text className="text-slate-400 text-[8px] font-black uppercase tracking-widest mb-2">Attached Documents</Text>
+            <View className={`mt-4 w-full pt-4 border-t ${isDark ? 'border-slate-800' : 'border-slate-100'}`}>
+               <Text className={`text-[8px] font-black uppercase tracking-widest mb-2 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Attached Documents</Text>
                <View className="flex-row flex-wrap">
                   {item.documents.map((doc, dIdx) => (
                     <TouchableOpacity 
@@ -231,10 +232,12 @@ const History = () => {
       {item.status === 'Completed' && !paramStoreId && (
         <TouchableOpacity 
           onPress={() => handleOpenFeedback(item.store?._id)}
-          className="mt-4 bg-blue-50 py-3 rounded-2xl border border-blue-100 items-center flex-row justify-center"
+          className={`mt-4 py-3 rounded-2xl border items-center flex-row justify-center ${
+            isDark ? 'bg-blue-500/10 border-blue-500/20' : 'bg-blue-50 border-blue-100'
+          }`}
         >
-          <MaterialCommunityIcons name="star-outline" size={18} color="#2563eb" />
-          <Text className="text-blue-600 font-bold ml-2 text-xs uppercase tracking-widest">Leave Feedback</Text>
+          <MaterialCommunityIcons name="star-outline" size={18} color="#3b82f6" />
+          <Text className="text-blue-500 font-bold ml-2 text-xs uppercase tracking-widest">Leave Feedback</Text>
         </TouchableOpacity>
       )}
     </Animatable.View>
@@ -245,9 +248,9 @@ const History = () => {
     return (
       <TouchableOpacity 
         onPress={() => setStatusFilter(label)}
-        className={`px-6 py-3 rounded-2xl mr-3 ${isActive ? 'bg-blue-600 shadow-lg shadow-blue-500/30' : 'bg-white border border-slate-100'}`}
+        className={`px-6 py-3 rounded-2xl mr-3 ${isActive ? 'bg-blue-600 shadow-lg shadow-blue-500/30' : (isDark ? 'bg-slate-900 border border-slate-800/80' : 'bg-white border border-slate-100')}`}
       >
-        <Text className={`font-black text-xs uppercase tracking-widest ${isActive ? 'text-white' : 'text-slate-400'}`}>
+        <Text className={`font-black text-xs uppercase tracking-widest ${isActive ? 'text-white' : (isDark ? 'text-slate-450' : 'text-slate-400')}`}>
           {label}
         </Text>
       </TouchableOpacity>
@@ -255,8 +258,8 @@ const History = () => {
   };
 
   return (
-    <View className="flex-1 bg-slate-50">
-      <StatusBar barStyle="dark-content" />
+    <View className={`flex-1 ${isDark ? 'bg-[#020617]' : 'bg-slate-50'}`}>
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
       <SafeAreaView className="flex-1">
         <View className="px-6 pt-6 pb-2">
             {isOffline && (
@@ -268,24 +271,28 @@ const History = () => {
             <View className="flex-row items-center mb-8">
                <TouchableOpacity 
                  onPress={() => navigation.goBack()}
-                 className="w-12 h-12 bg-white items-center justify-center rounded-2xl shadow-sm border border-slate-100 mr-4"
+                 className={`w-12 h-12 items-center justify-center rounded-2xl shadow-sm border ${
+                   isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'
+                 }`}
                >
-                 <MaterialCommunityIcons name="chevron-left" size={28} color="#1e293b" />
+                 <MaterialCommunityIcons name="chevron-left" size={28} color={isDark ? "#fff" : "#1e293b"} />
                </TouchableOpacity>
                <View>
-                 <Text className="text-3xl font-black text-slate-800">Booking History</Text>
+                 <Text className={`text-3xl font-black ${isDark ? 'text-white' : 'text-slate-800'}`}>Booking History</Text>
                  <Text className="text-blue-500 font-bold text-[10px] uppercase tracking-[2px]">Trace your past sessions</Text>
                </View>
             </View>
             
-            <View className="flex-row items-center bg-white border border-slate-100 rounded-3xl px-5 h-16 mb-6 shadow-sm">
-              <MaterialCommunityIcons name="magnify" size={22} color="#94a3b8" />
+            <View className={`flex-row items-center border rounded-3xl px-5 h-16 mb-6 shadow-sm ${
+              isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'
+            }`}>
+              <MaterialCommunityIcons name="magnify" size={22} color={isDark ? "#475569" : "#94a3b8"} />
               <TextInput
                 placeholder="Search by store or name..."
                 value={searchQuery}
                 onChangeText={setSearchQuery}
-                className="flex-1 ml-3 text-slate-700 font-bold"
-                placeholderTextColor="#cbd5e1"
+                className={`flex-1 ml-3 font-bold ${isDark ? 'text-slate-100' : 'text-slate-700'}`}
+                placeholderTextColor={isDark ? '#475569' : '#cbd5e1'}
               />
             </View>
 
@@ -314,10 +321,12 @@ const History = () => {
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
             ListEmptyComponent={
               <Animatable.View animation="fadeInUp" className="items-center justify-center mt-20 px-10">
-                 <View className="bg-white p-10 rounded-[48px] items-center border border-slate-100 shadow-sm w-full">
-                    <MaterialCommunityIcons name="calendar-blank-outline" size={80} color="#e2e8f0" />
-                    <Text className="text-slate-800 text-xl font-black mt-6">No records found</Text>
-                    <Text className="text-slate-400 text-center font-medium mt-2">
+                 <View className={`p-10 rounded-[48px] items-center border shadow-sm w-full ${
+                   isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'
+                 }`}>
+                    <MaterialCommunityIcons name="calendar-blank-outline" size={80} color={isDark ? "#1e293b" : "#e2e8f0"} />
+                    <Text className={`text-xl font-black mt-6 ${isDark ? 'text-slate-350' : 'text-slate-800'}`}>No records found</Text>
+                    <Text className={`text-center font-medium mt-2 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
                       {statusFilter === 'All' 
                         ? "You haven't made any appointments yet." 
                         : `No appointments with status "${statusFilter}" found.`}
@@ -331,9 +340,9 @@ const History = () => {
 
       <Modal visible={feedbackModalVisible} transparent animationType="slide" onRequestClose={() => setFeedbackModalVisible(false)}>
         <View className="flex-1 bg-black/60 justify-end">
-          <View className="bg-white rounded-t-[40px] p-8">
-            <Text className="text-2xl font-black text-slate-800 mb-2">Rate Your Experience</Text>
-            <Text className="text-slate-500 font-medium mb-6">Your feedback helps us improve.</Text>
+          <View className={`rounded-t-[40px] p-8 ${isDark ? 'bg-slate-900 border-t border-slate-800' : 'bg-white'}`}>
+            <Text className={`text-2xl font-black mb-2 ${isDark ? 'text-white' : 'text-slate-800'}`}>Rate Your Experience</Text>
+            <Text className={`font-medium mb-6 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Your feedback helps us improve.</Text>
             
             <View className="flex-row justify-center mb-6">
               {[1, 2, 3, 4, 5].map((star) => (
@@ -349,7 +358,10 @@ const History = () => {
               onChangeText={setComment}
               multiline
               numberOfLines={4}
-              className="bg-slate-50 border border-slate-100 rounded-2xl p-4 text-slate-800 font-medium mb-6"
+              className={`border rounded-2xl p-4 font-medium mb-6 ${
+                isDark ? 'bg-slate-950 border-slate-800 text-slate-100' : 'bg-slate-50 border-slate-100 text-slate-800'
+              }`}
+              placeholderTextColor={isDark ? '#475569' : '#cbd5e1'}
               textAlignVertical="top"
             />
 

@@ -5,6 +5,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import AppNavigator from './middleware/AppNavigator'; // Adjust path if needed
 import { AuthProvider } from './middleware/AuthContext'; // Adjust path if needed
 import { LanguageProvider } from './middleware/LanguageContext';
+import { ThemeProvider } from './middleware/ThemeContext';
 
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
@@ -118,13 +119,15 @@ export default function App() {
   }, []);
 
   return (
-    <LanguageProvider>
-      <AuthProvider>
-        <StatusBar  hidden={false} translucent={true} />
-        <NavigationContainer>
-          <AppNavigator />
-        </NavigationContainer>
-      </AuthProvider>
-    </LanguageProvider>
+    <ThemeProvider>
+      <LanguageProvider>
+        <AuthProvider>
+          <StatusBar  hidden={false} translucent={true} />
+          <NavigationContainer>
+            <AppNavigator />
+          </NavigationContainer>
+        </AuthProvider>
+      </LanguageProvider>
+    </ThemeProvider>
   );
 }

@@ -16,14 +16,18 @@ import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import * as FileSystem from 'expo-file-system';
 import * as DocumentPicker from 'expo-document-picker';
+import { useTheme } from '../middleware/ThemeContext';
 
 const { width } = Dimensions.get('window');
 
 const StoreRecords = () => {
   const route = useRoute();
   const navigation = useNavigation();
+  const { theme } = useTheme();
   const { storeId } = route.params || {}; 
   
+  const isDark = theme === 'dark';
+
   const [records, setRecords] = useState([]);
   const [filteredRecords, setFilteredRecords] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -220,36 +224,36 @@ const StoreRecords = () => {
   };
 
   const renderRecordItem = ({ item, index }) => (
-    <View className="flex-row items-center border-b border-slate-100 py-4 px-2">
-      <Text className="w-10 text-slate-500 font-bold text-xs">{index + 1}</Text>
+    <View className={`flex-row items-center border-b py-4 px-2 ${isDark ? 'border-slate-850' : 'border-slate-100'}`}>
+      <Text className={`w-10 font-bold text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{index + 1}</Text>
       <View className="flex-1 pr-2">
-        <Text className="text-slate-800 font-bold text-sm" numberOfLines={1}>{item.name}</Text>
-        <Text className="text-slate-400 text-[10px] font-medium mt-0.5">{item.phoneNumber}</Text>
+        <Text className={`font-bold text-sm ${isDark ? 'text-slate-200' : 'text-slate-800'}`} numberOfLines={1}>{item.name}</Text>
+        <Text className={`text-[10px] font-medium mt-0.5 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{item.phoneNumber}</Text>
       </View>
       <View className="flex-1 pr-2">
-        <Text className="text-slate-700 font-bold text-xs">
+        <Text className={`font-bold text-xs ${isDark ? 'text-slate-350' : 'text-slate-700'}`}>
            {item.slot ? format(new Date(item.slot.date), 'MMM dd') : format(new Date(item.bookingTime), 'MMM dd')}
         </Text>
-        <Text className="text-slate-400 text-[9px] font-black uppercase mt-0.5" numberOfLines={1}>
+        <Text className={`text-[9px] font-black uppercase mt-0.5 ${isDark ? 'text-slate-500' : 'text-slate-400'}`} numberOfLines={1}>
            {item.slot ? `${item.slot.startTime}-${item.slot.endTime}` : 'No Slot'}
         </Text>
       </View>
       <View className="flex-row items-center w-24 justify-end">
         {item.documents && item.documents.length > 0 ? (
-          <View className="bg-emerald-100 p-1.5 rounded-lg mr-2">
-            <MaterialCommunityIcons name="file-check" size={14} color="#059669" />
+          <View className="bg-emerald-150/10 p-1.5 rounded-lg mr-2 border border-emerald-500/20">
+            <MaterialCommunityIcons name="file-check" size={14} color="#10b981" />
           </View>
         ) : (
           <TouchableOpacity 
             onPress={() => pickAndUploadDocument(item._id)} 
             disabled={uploadingId === item._id}
-            className="bg-blue-50 p-1.5 rounded-lg mr-2"
+            className={`p-1.5 rounded-lg mr-2 ${isDark ? 'bg-slate-900 border border-slate-800' : 'bg-blue-50'}`}
           >
             {uploadingId === item._id ? <ActivityIndicator size="small" color="#2563eb" /> : <MaterialCommunityIcons name="upload" size={14} color="#2563eb" />}
           </TouchableOpacity>
         )}
-        <View className={`px-2 py-1.5 rounded-lg ${item.status === 'Completed' ? 'bg-emerald-50' : 'bg-red-50'}`}>
-          <Text className={`text-[9px] font-black uppercase tracking-widest ${item.status === 'Completed' ? 'text-emerald-600' : 'text-red-600'}`}>
+        <View className={`px-2 py-1.5 rounded-lg ${item.status === 'Completed' ? (isDark ? 'bg-emerald-500/10' : 'bg-emerald-50') : (isDark ? 'bg-red-500/10' : 'bg-red-50')}`}>
+          <Text className={`text-[9px] font-black uppercase tracking-widest ${item.status === 'Completed' ? 'text-emerald-500' : 'text-red-500'}`}>
             {item.status}
           </Text>
         </View>
@@ -258,8 +262,8 @@ const StoreRecords = () => {
   );
 
   return (
-    <View className="flex-1 bg-white">
-      <StatusBar barStyle="dark-content" />
+    <View className={`flex-1 ${isDark ? 'bg-[#020617]' : 'bg-white'}`}>
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
       <SafeAreaView className="flex-1">
         {isOffline && (
           <Animatable.View animation="slideInDown" className="bg-red-500 py-1.5 items-center flex-row justify-center z-50">
@@ -268,38 +272,42 @@ const StoreRecords = () => {
           </Animatable.View>
         )}
         {/* Header */}
-        <View className="px-5 pt-6 pb-4 bg-slate-50 rounded-b-[40px] shadow-sm mb-4">
+        <View className={`px-5 pt-6 pb-4 rounded-b-[40px] shadow-sm mb-4 border-b ${
+          isDark ? 'bg-slate-900 border-slate-800' : 'bg-slate-50 border-slate-100'
+        }`}>
             <View className="flex-row items-center mb-6">
                <TouchableOpacity 
                  onPress={() => navigation.goBack()}
-                 className="w-10 h-10 bg-white items-center justify-center rounded-xl shadow-sm border border-slate-100 mr-4"
+                 className={`w-10 h-10 items-center justify-center rounded-xl shadow-sm border mr-4 ${
+                   isDark ? 'bg-slate-950 border-slate-800' : 'bg-white border-slate-100'
+                 }`}
                >
-                 <MaterialCommunityIcons name="chevron-left" size={24} color="#1e293b" />
+                 <MaterialCommunityIcons name="chevron-left" size={24} color={isDark ? '#fff' : '#1e293b'} />
                </TouchableOpacity>
                <View className="flex-1">
-                 <Text className="text-2xl font-black text-slate-900">Store Records</Text>
+                 <Text className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>Store Records</Text>
                  <Text className="text-blue-500 font-bold text-[10px] uppercase tracking-[2px]">Export tracking easily</Text>
                </View>
                <View className="flex-row">
-                 <TouchableOpacity onPress={exportCSV} disabled={exporting} className="w-10 h-10 bg-emerald-100 items-center justify-center rounded-xl mr-2">
-                   <MaterialCommunityIcons name="microsoft-excel" size={20} color="#059669" />
+                 <TouchableOpacity onPress={exportCSV} disabled={exporting} className="w-10 h-10 bg-emerald-500/10 border border-emerald-500/20 items-center justify-center rounded-xl mr-2">
+                   <MaterialCommunityIcons name="microsoft-excel" size={20} color="#10b981" />
                  </TouchableOpacity>
-                 <TouchableOpacity onPress={exportPDF} disabled={exporting} className="w-10 h-10 bg-red-100 items-center justify-center rounded-xl">
-                   <MaterialCommunityIcons name="file-pdf-box" size={20} color="#dc2626" />
+                 <TouchableOpacity onPress={exportPDF} disabled={exporting} className="w-10 h-10 bg-red-500/10 border border-red-500/20 items-center justify-center rounded-xl">
+                   <MaterialCommunityIcons name="file-pdf-box" size={20} color="#ef4444" />
                  </TouchableOpacity>
                </View>
             </View>
 
             <View>
-               <Text className="text-slate-400 font-bold text-xs uppercase ml-1 mb-2">Filter By Date</Text>
+               <Text className={`font-bold text-xs uppercase ml-1 mb-2 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Filter By Date</Text>
                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                   {availableDates.map((date) => (
                     <TouchableOpacity 
                       key={date}
                       onPress={() => setSelectedDate(date)}
-                      className={`px-5 py-2.5 rounded-xl mr-3 ${selectedDate === date ? 'bg-blue-600' : 'bg-white border border-slate-200'}`}
+                      className={`px-5 py-2.5 rounded-xl mr-3 ${selectedDate === date ? 'bg-blue-600' : (isDark ? 'bg-slate-950 border border-slate-800' : 'bg-white border border-slate-200')}`}
                     >
-                      <Text className={`font-black text-[10px] uppercase tracking-widest ${selectedDate === date ? 'text-white' : 'text-slate-500'}`}>
+                      <Text className={`font-black text-[10px] uppercase tracking-widest ${selectedDate === date ? 'text-white' : (isDark ? 'text-slate-400' : 'text-slate-500')}`}>
                         {date}
                       </Text>
                     </TouchableOpacity>
@@ -310,11 +318,13 @@ const StoreRecords = () => {
 
         {/* Table View */}
         <View className="flex-1 px-4">
-            <View className="flex-row bg-slate-100 py-3 px-2 rounded-t-2xl mt-2 border border-slate-200">
-               <Text className="w-10 text-slate-500 font-bold text-[10px] uppercase tracking-widest">S.No</Text>
-               <Text className="flex-1 text-slate-500 font-bold text-[10px] uppercase tracking-widest">User Details</Text>
-               <Text className="flex-1 text-slate-500 font-bold text-[10px] uppercase tracking-widest">Time Slot</Text>
-               <Text className="w-20 text-center text-slate-500 font-bold text-[10px] uppercase tracking-widest">Status</Text>
+            <View className={`flex-row py-3 px-2 rounded-t-2xl mt-2 border ${
+              isDark ? 'bg-slate-900 border-slate-800' : 'bg-slate-100 border-slate-200'
+            }`}>
+               <Text className={`w-10 font-bold text-[10px] uppercase tracking-widest ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>S.No</Text>
+               <Text className={`flex-1 font-bold text-[10px] uppercase tracking-widest ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>User Details</Text>
+               <Text className={`flex-1 font-bold text-[10px] uppercase tracking-widest ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Time Slot</Text>
+               <Text className={`w-20 text-center font-bold text-[10px] uppercase tracking-widest ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Status</Text>
             </View>
 
             {loading ? (
@@ -332,8 +342,8 @@ const StoreRecords = () => {
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
                 ListEmptyComponent={
                   <View className="items-center justify-center mt-20">
-                     <MaterialCommunityIcons name="file-document-outline" size={60} color="#cbd5e1" />
-                     <Text className="text-slate-500 text-lg font-black mt-4">No Records Found</Text>
+                     <MaterialCommunityIcons name="file-document-outline" size={60} color={isDark ? "#1e293b" : "#cbd5e1"} />
+                     <Text className={`text-lg font-black mt-4 ${isDark ? 'text-slate-350' : 'text-slate-500'}`}>No Records Found</Text>
                      <Text className="text-slate-400 font-medium text-xs mt-1">Select a different date filter.</Text>
                   </View>
                 }

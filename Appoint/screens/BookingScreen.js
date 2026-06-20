@@ -21,17 +21,18 @@ import { API_BASE_URL } from '../config/api';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Animatable from 'react-native-animatable';
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useTheme } from '../middleware/ThemeContext';
 
 // Moved outside to fix keyboard focus issue
-const InputField = ({ icon, label, placeholder, value, onChangeText, keyboardType = 'default' }) => (
+const InputField = ({ icon, label, placeholder, value, onChangeText, keyboardType = 'default', isDark }) => (
   <View className="mb-6">
-    <Text className="text-slate-500 text-xs font-bold uppercase tracking-widest mb-2 ml-4">{label}</Text>
-    <View className="flex-row items-center bg-white border border-slate-100 rounded-2xl px-4 h-14 shadow-sm">
+    <Text className={`text-xs font-bold uppercase tracking-widest mb-2 ml-4 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{label}</Text>
+    <View className={`flex-row items-center border rounded-2xl px-4 h-14 shadow-sm ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
       <MaterialCommunityIcons name={icon} size={20} color="#3b82f6" />
       <TextInput
-        className="flex-1 text-slate-800 font-bold ml-3 h-full"
+        className={`flex-1 font-bold ml-3 h-full ${isDark ? 'text-slate-100' : 'text-slate-800'}`}
         placeholder={placeholder}
-        placeholderTextColor="#cbd5e1"
+        placeholderTextColor={isDark ? '#64748b' : '#cbd5e1'}
         value={value}
         onChangeText={onChangeText}
         keyboardType={keyboardType}
@@ -44,7 +45,10 @@ const InputField = ({ icon, label, placeholder, value, onChangeText, keyboardTyp
 const BookingScreen = () => {
   const route = useRoute();
   const navigation = useNavigation();
+  const { theme } = useTheme();
   const { storeId, timeSlotId, appointmentSlotId } = route.params || {};
+
+  const isDark = theme === 'dark';
 
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
@@ -124,31 +128,33 @@ const BookingScreen = () => {
 
   if (loading) {
     return (
-      <View className="flex-1 justify-center items-center bg-slate-50">
+      <View className={`flex-1 justify-center items-center ${isDark ? 'bg-[#020617]' : 'bg-[#f8fafc]'}`}>
         <ActivityIndicator size="large" color="#3b82f6" />
       </View>
     );
   }
 
   return (
-    <View className="flex-1 bg-slate-50">
-      <StatusBar barStyle="dark-content" />
+    <View className={`flex-1 ${isDark ? 'bg-[#020617]' : 'bg-slate-50'}`}>
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
       <SafeAreaView className="flex-1">
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 24 }}>
           <Animatable.View animation="fadeInDown">
             <TouchableOpacity 
               onPress={() => navigation.goBack()}
-              className="mb-8 w-10 h-10 bg-white items-center justify-center rounded-xl shadow-sm border border-slate-100"
+              className={`mb-8 w-10 h-10 items-center justify-center rounded-xl shadow-sm border ${
+                isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'
+              }`}
             >
-              <MaterialCommunityIcons name="chevron-left" size={24} color="#1e293b" />
+              <MaterialCommunityIcons name="chevron-left" size={24} color={isDark ? '#fff' : '#1e293b'} />
             </TouchableOpacity>
-            <Text className="text-3xl font-black text-slate-900 mb-2">Final Step</Text>
-            <Text className="text-slate-500 font-medium text-base mb-8">Confirm your presence and book the slot.</Text>
+            <Text className={`text-3xl font-black mb-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>Final Step</Text>
+            <Text className={`font-medium text-base mb-8 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Confirm your presence and book the slot.</Text>
           </Animatable.View>
 
           <Animatable.View animation="fadeInUp" delay={200}>
             {/* Slot Summary Card */}
-            <View className="bg-blue-600 rounded-3xl p-5 mb-8 shadow-xl shadow-blue-500/20">
+            <View className={`bg-blue-600 rounded-3xl p-5 mb-8 shadow-xl ${isDark ? 'shadow-none' : 'shadow-blue-500/20'}`}>
                <View className="flex-row justify-between items-center mb-4">
                   <Text className="text-blue-100 font-black tracking-widest uppercase text-[10px]">Selected Slot</Text>
                   <MaterialCommunityIcons name="clock-check" size={20} color="#fff" />
@@ -160,9 +166,9 @@ const BookingScreen = () => {
                </View>
             </View>
 
-            <InputField icon="account-outline" label="Full Name" placeholder="Ex: Mahesh Kumar" value={name} onChangeText={setName} />
-            <InputField icon="phone-outline" label="Phone Number" placeholder="10-digit number" value={phoneNumber} onChangeText={setPhoneNumber} keyboardType="phone-pad" />
-            <InputField icon="map-marker-outline" label="Address" placeholder="Your street address" value={address} onChangeText={setAddress} />
+            <InputField isDark={isDark} icon="account-outline" label="Full Name" placeholder="Ex: Mahesh Kumar" value={name} onChangeText={setName} />
+            <InputField isDark={isDark} icon="phone-outline" label="Phone Number" placeholder="10-digit number" value={phoneNumber} onChangeText={setPhoneNumber} keyboardType="phone-pad" />
+            <InputField isDark={isDark} icon="map-marker-outline" label="Address" placeholder="Your street address" value={address} onChangeText={setAddress} />
 
             <TouchableOpacity 
               onPress={handleBookAppointment}

@@ -37,6 +37,8 @@ export const translations = {
     language: "Language",
     changeLanguage: "Change Language",
     selectLanguage: "Select Language",
+    myStores: "My Stores",
+    status: "Status",
     
     // Create Store
     registerShop: "Register Shop",
@@ -106,6 +108,8 @@ export const translations = {
     language: "भाषा",
     changeLanguage: "भाषा बदलें",
     selectLanguage: "भाषा चुनें",
+    myStores: "मेरे स्टोर्स",
+    status: "स्थिति",
 
     // Create Store
     registerShop: "दुकान पंजीकृत करें",
@@ -175,6 +179,8 @@ export const translations = {
     language: "भाषा",
     changeLanguage: "भाषा बदला",
     selectLanguage: "भाषा निवडा",
+    myStores: "माझे स्टोअर्स",
+    status: "स्थिती",
 
     // Create Store
     registerShop: "दुकान नोंदवा",

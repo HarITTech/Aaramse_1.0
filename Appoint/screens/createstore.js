@@ -22,7 +22,9 @@ import * as Animatable from 'react-native-animatable';
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import SuccessPopup from './SuccessPopup';
 import CustomAlert from "../components/CustomAlert";
+import OtpModal from "../components/OtpModal";
 import { useLanguage } from "../middleware/LanguageContext";
+import { useTheme } from '../middleware/ThemeContext';
 
 // Moved outside to fix keyboard focus issue
 const InputField = ({ 
@@ -35,16 +37,19 @@ const InputField = ({
   keyboardType = 'default',
   isValid = null,
   error = "",
-  maxLength
+  maxLength,
+  isDark
 }) => (
   <View className="mb-6">
     <View className="flex-row justify-between items-center mb-2 px-1">
-      <Text className="text-slate-500 text-[10px] font-black uppercase tracking-[2px]">{label}</Text>
+      <Text className={`text-[10px] font-black uppercase tracking-[2px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{label}</Text>
       {isValid === false && <Text className="text-red-500 text-[9px] font-bold">{error}</Text>}
       {isValid === true && <View className="bg-emerald-500 rounded-full p-0.5"><MaterialCommunityIcons name="check" size={8} color="white" /></View>}
     </View>
-    <View className={`flex-row items-center bg-white border ${isValid === false ? 'border-red-200 bg-red-50/10' : isValid === true ? 'border-emerald-100' : 'border-slate-100'} rounded-[20px] px-4 shadow-sm ${multiline ? 'h-32 pt-4' : 'h-14'}`}>
-      <View className={`p-2 rounded-xl mr-3 ${isValid === false ? 'bg-red-50' : isValid === true ? 'bg-emerald-50' : 'bg-blue-50/50'}`}>
+    <View className={`flex-row items-center border ${
+      isValid === false ? 'border-red-200 bg-red-50/10' : isValid === true ? 'border-emerald-100' : (isDark ? 'border-slate-800 bg-slate-950' : 'border-slate-100 bg-white')
+    } rounded-[20px] px-4 shadow-sm ${multiline ? 'h-32 pt-4' : 'h-14'}`}>
+      <View className={`p-2 rounded-xl mr-3 ${isValid === false ? 'bg-red-50' : isValid === true ? 'bg-emerald-50' : (isDark ? 'bg-slate-900' : 'bg-blue-50/50')}`}>
         <MaterialCommunityIcons 
           name={icon} 
           size={20} 
@@ -53,9 +58,9 @@ const InputField = ({
         />
       </View>
       <TextInput
-        className="flex-1 text-slate-800 font-bold ml-1 h-full text-sm"
+        className={`flex-1 font-bold ml-1 h-full text-sm ${isDark ? 'text-slate-100' : 'text-slate-800'}`}
         placeholder={placeholder}
-        placeholderTextColor="#94a3b8"
+        placeholderTextColor={isDark ? '#475569' : '#94a3b8'}
         value={value}
         onChangeText={onChangeText}
         multiline={multiline}
@@ -70,13 +75,18 @@ const InputField = ({
 
 const CreateStore = () => {
   const navigation = useNavigation();
+  const { theme } = useTheme();
   const { t } = useLanguage();
+
+  const isDark = theme === 'dark';
+
   const [formData, setFormData] = useState({
     name: '',
     fname: '',
     type: '',
     description: '',
     location: '',
+    email: '',
     phoneNumber: '',
     aadharNumber: '',
     appointmentSlots: [
@@ -90,6 +100,7 @@ const CreateStore = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [popupVisible, setPopupVisible] = useState(false);
+  const [otpModalVisible, setOtpModalVisible] = useState(false);
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertConfig, setAlertConfig] = useState({ title: '', message: '', type: 'info' });
 
@@ -112,19 +123,20 @@ const CreateStore = () => {
     return phoneRegex.test(phoneNumber);
   };
 
+  const isEmailValid = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email.trim());
+  };
+
   const isAadharValid = (aadhar) => {
-    // Check if it's 12 digits after removing spaces
     const cleanAadhar = aadhar.replace(/\s/g, '');
     const aadharRegex = /^[0-9]{12}$/;
     return aadharRegex.test(cleanAadhar);
   };
 
   const formatAadhar = (text) => {
-    // Remove non-digit characters
     const cleaned = text.replace(/\D/g, '');
-    // Limit to 12 digits
     const limited = cleaned.substring(0, 12);
-    // Add spaces every 4 digits
     const matches = limited.match(/\d{1,4}/g);
     if (matches) {
       return matches.join('  ');
@@ -133,10 +145,16 @@ const CreateStore = () => {
   };
 
   const isFormValid = () => {
-    const { name, fname, type, description, location, phoneNumber, aadharNumber } = formData;
+    const { name, fname, type, description, location, phoneNumber, aadharNumber, email } = formData;
     
     if (!name.trim() || !fname.trim() || !type.trim() || !description.trim() || !location.trim()) {
       setAlertConfig({ title: "Incomplete Form", message: "Please fill in all general details about your shop.", type: "warning" });
+      setAlertVisible(true);
+      return false;
+    }
+
+    if (!isEmailValid(email)) {
+      setAlertConfig({ title: "Invalid Email", message: "Please enter a valid email address to receive your OTP.", type: "error" });
       setAlertVisible(true);
       return false;
     }
@@ -187,9 +205,16 @@ const CreateStore = () => {
     setImages(newImages);
   };
 
+  // Step 1: Validate form and open OTP modal
   const handleSubmit = async () => {
     if (!isFormValid()) return;
+    // Open OTP verification modal
+    setOtpModalVisible(true);
+  };
 
+  // Step 2: Called after OTP is verified — now actually create the store
+  const handleOtpVerified = async () => {
+    setOtpModalVisible(false);
     setLoading(true);
 
     const form = new FormData();
@@ -216,9 +241,7 @@ const CreateStore = () => {
         `${API_BASE_URL}/api/store/create`,
         form,
         {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
+          headers: { 'Content-Type': 'multipart/form-data' },
           timeout: 30000,
         }
       );
@@ -238,8 +261,8 @@ const CreateStore = () => {
   }, []);
 
   return (
-    <View className="flex-1 bg-slate-50">
-      <StatusBar barStyle="dark-content" />
+    <View className={`flex-1 ${isDark ? 'bg-[#020617]' : 'bg-slate-50'}`}>
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
       <SafeAreaView className="flex-1">
         <ScrollView 
           showsVerticalScrollIndicator={false}
@@ -247,31 +270,46 @@ const CreateStore = () => {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         >
           <Animatable.View animation="fadeInDown">
-            <TouchableOpacity onPress={() => navigation.goBack()} className="mb-4 w-10 h-10 bg-white items-center justify-center rounded-xl shadow-sm border border-slate-100">
-              <MaterialCommunityIcons name="chevron-left" size={24} color="#1e293b" />
+            <TouchableOpacity 
+              onPress={() => navigation.goBack()} 
+              className={`mb-4 w-10 h-10 items-center justify-center rounded-xl shadow-sm border ${
+                isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'
+              }`}
+            >
+              <MaterialCommunityIcons name="chevron-left" size={24} color={isDark ? '#fff' : '#1e293b'} />
             </TouchableOpacity>
-            <Text className="text-3xl font-black text-slate-900 mb-1">{t('registerShop')}</Text>
-            <Text className="text-slate-500 font-medium mb-8 text-base">{t('growBusiness')}</Text>
+            <Text className={`text-3xl font-black mb-1 ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('registerShop')}</Text>
+            <Text className={`font-medium mb-8 text-base ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('growBusiness')}</Text>
           </Animatable.View>
 
           <Animatable.View animation="fadeInUp" delay={200}>
-            <View className="bg-white p-6 rounded-[32px] shadow-sm border border-slate-100 mb-8">
-              <Text className="text-slate-900 font-black text-lg mb-6 flex-row items-center">
+            <View className={`p-6 rounded-[32px] border mb-8 ${
+              isDark ? 'bg-slate-900 border-slate-800 shadow-none' : 'bg-white border-slate-100 shadow-sm'
+            }`}>
+              <Text className={`text-lg font-black mb-6 flex-row items-center ${isDark ? 'text-slate-200' : 'text-slate-900'}`}>
                 <MaterialCommunityIcons name="information" size={20} color="#3b82f6" /> {t('basicDetails')}
               </Text>
               
-              <InputField icon="storefront-outline" label={t('storeName')} placeholder="Ex: Premium Saloon" value={formData.name} onChangeText={(v) => handleInputChange('name', v)} />
-              <InputField icon="tag-outline" label={t('storeType')} placeholder="Hospital, Hotel, Saloon..." value={formData.type} onChangeText={(v) => handleInputChange('type', v)} />
-              <InputField icon="account-outline" label={t('ownerName')} placeholder="Full legal name" value={formData.fname} onChangeText={(v) => handleInputChange('fname', v)} />
-              <InputField icon="map-marker-outline" label={t('location')} placeholder="Full address" value={formData.location} onChangeText={(v) => handleInputChange('location', v)} />
+              <InputField isDark={isDark} icon="storefront-outline" label={t('storeName')} placeholder="Ex: Premium Saloon" value={formData.name} onChangeText={(v) => handleInputChange('name', v)} />
+              <InputField isDark={isDark} icon="tag-outline" label={t('storeType')} placeholder="Hospital, Hotel, Saloon..." value={formData.type} onChangeText={(v) => handleInputChange('type', v)} />
+              <InputField isDark={isDark} icon="account-outline" label={t('ownerName')} placeholder="Full legal name" value={formData.fname} onChangeText={(v) => handleInputChange('fname', v)} />
+              <InputField isDark={isDark} icon="map-marker-outline" label={t('location')} placeholder="Full address" value={formData.location} onChangeText={(v) => handleInputChange('location', v)} />
             </View>
 
-            <View className="bg-white p-6 rounded-[32px] shadow-sm border border-slate-100 mb-8">
-              <Text className="text-slate-900 font-black text-lg mb-6 flex-row items-center">
+            <View className={`p-6 rounded-[32px] border mb-8 ${
+              isDark ? 'bg-slate-900 border-slate-800 shadow-none' : 'bg-white border-slate-100 shadow-sm'
+            }`}>
+              <Text className={`text-lg font-black mb-6 flex-row items-center ${isDark ? 'text-slate-200' : 'text-slate-900'}`}>
                 <MaterialCommunityIcons name="shield-check" size={20} color="#10b981" /> Verification
               </Text>
               
+              <InputField isDark={isDark} icon="shield-check" label="Email Address" placeholder="owner@example.com" value={formData.email} onChangeText={(v) => handleInputChange('email', v)} keyboardType="email-address"
+                isValid={formData.email.length > 0 ? isEmailValid(formData.email) : null}
+                error="Invalid email"
+              />
+              
               <InputField 
+                isDark={isDark}
                 icon="card-account-details-outline" 
                 label="Aadhar Number" 
                 placeholder="0000  0000  0000" 
@@ -284,6 +322,7 @@ const CreateStore = () => {
               />
               
               <InputField 
+                isDark={isDark}
                 icon="phone-outline" 
                 label="Business Phone" 
                 placeholder="9876543210" 
@@ -296,32 +335,40 @@ const CreateStore = () => {
               />
             </View>
 
-            <View className="bg-white p-6 rounded-[32px] shadow-sm border border-slate-100 mb-8">
-              <Text className="text-slate-900 font-black text-lg mb-6 flex-row items-center">
+            <View className={`p-6 rounded-[32px] border mb-8 ${
+              isDark ? 'bg-slate-900 border-slate-800 shadow-none' : 'bg-white border-slate-100 shadow-sm'
+            }`}>
+              <Text className={`text-lg font-black mb-6 flex-row items-center ${isDark ? 'text-slate-200' : 'text-slate-900'}`}>
                 <MaterialCommunityIcons name="text-box-outline" size={20} color="#f59e0b" /> About Business
               </Text>
-              <InputField icon="text-box-outline" label="Description" placeholder="Tell customers what you offer..." value={formData.description} onChangeText={(v) => handleInputChange('description', v)} multiline />
+              <InputField isDark={isDark} icon="text-box-outline" label="Description" placeholder="Tell customers what you offer..." value={formData.description} onChangeText={(v) => handleInputChange('description', v)} multiline />
             </View>
 
-            <View className="mb-8">
-              <Text className="text-slate-500 text-xs font-bold uppercase tracking-widest mb-4 ml-2">Store Images</Text>
+            <View className={`p-6 rounded-[32px] border mb-8 ${
+              isDark ? 'bg-slate-900 border-slate-800 shadow-none' : 'bg-white border-slate-100 shadow-sm'
+            }`}>
+              <Text className={`text-lg font-black mb-6 flex-row items-center ${isDark ? 'text-slate-200' : 'text-slate-900'}`}>
+                <MaterialCommunityIcons name="image-multiple-outline" size={20} color="#ec4899" /> Store Gallery
+              </Text>
               <View className="flex-row flex-wrap">
                 {images.map((img, index) => (
                   <View key={index} className="mr-3 mb-3 relative">
-                    <Image source={{ uri: img }} className="w-20 h-20 rounded-2xl" />
+                    <Image source={{ uri: img }} className="w-20 h-20 rounded-2xl border border-slate-100" />
                     <TouchableOpacity 
                       onPress={() => removeImage(index)}
-                      className="absolute -top-2 -right-2 bg-red-500 rounded-full p-1"
+                      className="absolute -top-1.5 -right-1.5 bg-red-500 rounded-full p-1 shadow-md shadow-red-500/30"
                     >
-                      <MaterialCommunityIcons name="close" size={14} color="#fff" />
+                      <MaterialCommunityIcons name="close" size={12} color="#fff" />
                     </TouchableOpacity>
                   </View>
                 ))}
                 <TouchableOpacity 
                   onPress={pickImage}
-                  className="w-20 h-20 bg-blue-50 border-2 border-dashed border-blue-200 rounded-2xl items-center justify-center"
+                  className={`w-20 h-20 border-2 border-dashed rounded-2xl items-center justify-center ${
+                    isDark ? 'bg-slate-950 border-slate-800' : 'bg-blue-50/50 border-blue-200'
+                  }`}
                 >
-                  <MaterialCommunityIcons name="camera-plus-outline" size={28} color="#3b82f6" />
+                  <MaterialCommunityIcons name="camera-plus-outline" size={24} color="#3b82f6" />
                 </TouchableOpacity>
               </View>
             </View>
@@ -357,6 +404,13 @@ const CreateStore = () => {
         title="Store Registered!"
         message="Your business is now live on AaramSe. You can manage slots and bookings from your dashboard."
         buttonText="Go to My Dashboard"
+      />
+
+      <OtpModal
+        visible={otpModalVisible}
+        email={formData.email}
+        onVerified={handleOtpVerified}
+        onClose={() => setOtpModalVisible(false)}
       />
 
       <CustomAlert 

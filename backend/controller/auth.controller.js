@@ -8,19 +8,29 @@ import Store from '../models/store.js';
 
 // Controller for User Registration
 export const register = async (req, res) => {
-  const { name, email, password } = req.body;
+  const { name, email, phone, password } = req.body;
 
   try {
+    let query = {};
+    if (email) {
+      query = { email };
+    } else if (phone) {
+      query = { phone };
+    } else {
+      return res.status(400).json({ msg: 'Please provide email or mobile number' });
+    }
+
     // Check if the user already exists
-    let user = await User.findOne({ email });
+    let user = await User.findOne(query);
     if (user) {
       return res.status(400).json({ msg: 'User already exists' });
     }
 
-    // Create a new user
+    // Create a new user (exclude empty email/phone to allow unique index sparse logic)
     user = new User({
       name,
-      email,
+      email: email || undefined,
+      phone: phone || undefined,
       password,
     });
 
@@ -59,8 +69,17 @@ export const login = async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    // Check if the user exists
-    let user = await User.findOne({ email });
+    if (!email) {
+      return res.status(400).json({ msg: 'Please provide email or mobile number' });
+    }
+
+    // Check if the user exists by matching either email or phone
+    let user = await User.findOne({
+      $or: [
+        { email: email },
+        { phone: email }
+      ]
+    });
     if (!user) {
       return res.status(400).json({ msg: 'Invalid credentials' });
     }

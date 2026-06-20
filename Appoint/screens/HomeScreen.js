@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { 
   View, 
   Text, 
@@ -6,8 +6,8 @@ import {
   Image, 
   Dimensions, 
   StatusBar,
-  ScrollView,
-  Linking
+  Linking,
+  ImageBackground
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -16,212 +16,164 @@ import * as Animatable from 'react-native-animatable';
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import logo from '../assets/logo.png';
 import haritLogo from '../assets/harit_logo.png';
+import backgroundImage from '../assets/background_concept.png';
+import { useAuth } from '../middleware/AuthContext';
+import { useTheme } from '../middleware/ThemeContext';
 
-const { width } = Dimensions.get('window');
-
-const TypingQuote = () => {
-  const quotes = [
-    "वेळेची बचत, आरामात बुकिंग।",
-    "रांगेत उभे राहण्याचे दिवस संपले!",
-    "Life is short, don't spend it in a queue.",
-    "आता सर्व काही डिजिटल, सर्व काही सोपे।",
-    "Smart Booking for a Smart Lifestyle."
-  ];
-  
-  const [currentQuoteIndex, setCurrentQuoteIndex] = useState(0);
-  const [displayedText, setDisplayedText] = useState('');
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [speed, setSpeed] = useState(100);
-
-  useEffect(() => {
-    const handleTyping = () => {
-      const fullText = quotes[currentQuoteIndex];
-      
-      if (!isDeleting) {
-        setDisplayedText(fullText.substring(0, displayedText.length + 1));
-        setSpeed(100);
-        
-        if (displayedText === fullText) {
-          setTimeout(() => setIsDeleting(true), 2000);
-        }
-      } else {
-        setDisplayedText(fullText.substring(0, displayedText.length - 1));
-        setSpeed(50);
-        
-        if (displayedText === '') {
-          setIsDeleting(false);
-          setCurrentQuoteIndex((prev) => (prev + 1) % quotes.length);
-        }
-      }
-    };
-
-    const timer = setTimeout(handleTyping, speed);
-    return () => clearTimeout(timer);
-  }, [displayedText, isDeleting, currentQuoteIndex]);
-
-  return (
-    <View className="h-10 justify-center items-center">
-      <Text className="text-blue-300 text-sm font-medium text-center">
-        {displayedText}<Text className="text-white">|</Text>
-      </Text>
-    </View>
-  );
-};
-
-const FeatureItem = ({ icon, text, title, delay }) => (
-  <Animatable.View 
-    animation="fadeInUp" 
-    delay={delay} 
-    className="w-[48%] bg-white/10 p-5 rounded-[32px] border border-white/20 mb-4 backdrop-blur-md"
-  >
-    <View className="bg-blue-500/20 w-12 h-12 rounded-2xl items-center justify-center mb-4">
-      <MaterialCommunityIcons name={icon} size={28} color="#60a5fa" />
-    </View>
-    <Text className="text-white font-black text-sm mb-1">{title}</Text>
-    <Text className="text-blue-100/60 text-[10px] leading-4 font-medium">{text}</Text>
-  </Animatable.View>
-);
+const { width, height } = Dimensions.get('window');
 
 const HomeScreen = () => {
   const navigation = useNavigation();
-  
+  const { loginAsGuest } = useAuth();
+  const { theme } = useTheme();
+
+  const isDark = theme === 'dark';
+
   return (
-    <View className="flex-1 bg-[#020617]">
-      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+    <ImageBackground 
+      source={backgroundImage} 
+      className="flex-1"
+      resizeMode="cover"
+    >
+      <StatusBar 
+        barStyle={isDark ? "light-content" : "dark-content"} 
+        translucent 
+        backgroundColor="transparent" 
+      />
       
-      {/* Background Decor */}
-      <View className="absolute inset-0">
-        <LinearGradient
-          colors={['#0f172a', '#1e1b4b', '#020617']}
-          className="flex-1"
-        />
-        <Animatable.View 
-          animation="pulse" 
-          iterationCount="infinite" 
-          className="absolute -top-40 -left-20 w-[600px] h-[600px] bg-blue-600/10 rounded-full blur-[100px]" 
-        />
-        <Animatable.View 
-          animation="pulse" 
-          iterationCount="infinite" 
-          delay={1000}
-          className="absolute top-1/2 -right-20 w-[400px] h-[400px] bg-indigo-600/10 rounded-full blur-[100px]" 
-        />
-      </View>
-
-      <SafeAreaView className="flex-1">
-        <ScrollView 
-          contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }}
-          showsVerticalScrollIndicator={false}
-          className="px-6"
-        >
-          {/* Header Branding */}
-          <Animatable.View animation="fadeInDown" className="flex-row justify-between items-center py-4 mb-4">
-            <View className="flex-row items-center flex-1">
-              <View className="bg-white/10 p-2.5 rounded-2xl border border-white/10 mr-4">
-                 <Image source={logo} style={{ width: 40, height: 40 }} resizeMode="contain" />
-              </View>
-              <View className="flex-1">
-                <Text className="text-white font-black text-2xl tracking-tighter" numberOfLines={1}>
-                  आराम<Text className="text-blue-400">Se</Text>
-                </Text>
-                <Text className="text-blue-400/60 text-[9px] font-bold uppercase tracking-[2px]">Premium Booking Solution</Text>
-              </View>
+      {/* Dynamic Overlay Gradient based on active theme */}
+      <LinearGradient
+        colors={
+          isDark 
+            ? ['rgba(10, 15, 29, 0.9)', 'rgba(23, 37, 84, 0.65)', 'rgba(3, 7, 18, 0.98)']
+            : ['rgba(255, 255, 255, 0.85)', 'rgba(239, 246, 255, 0.9)', 'rgba(219, 234, 254, 0.95)']
+        }
+        className="flex-1"
+      >
+        <SafeAreaView className="flex-1 justify-between px-8 py-8">
+          
+          {/* Top Header Label */}
+          <Animatable.View animation="fadeInDown" duration={800} className="items-center mt-2">
+            <View className={isDark ? "bg-blue-500/10 px-4 py-1.5 rounded-full border border-blue-500/20" : "bg-blue-500/5 px-4 py-1.5 rounded-full border border-blue-500/15"}>
+              <Text className="text-blue-500 text-[9px] font-black uppercase tracking-[2.5px]">Premium Booking Solution</Text>
             </View>
           </Animatable.View>
 
-          {/* Hero Section */}
-          <Animatable.View animation="fadeInUp" delay={200} className="mb-6 mt-4 items-center">
-            <View className="bg-blue-500/10 px-4 py-1.5 rounded-full border border-blue-500/20 mb-6">
-              <Text className="text-blue-400 text-[10px] font-black uppercase tracking-[3px]">Made in Maharashtra</Text>
-            </View>
-            <Text className="text-white text-5xl font-black text-center leading-[60px]" numberOfLines={2}>
-              आपला वेळ{"\n"}वाचवा <Text className="text-blue-400">आरामSe</Text>
-            </Text>
-            <View className="mt-6">
-               <TypingQuote />
-            </View>
-          </Animatable.View>
-
-          {/* Feature Card - Minimalist */}
-          <Animatable.View 
-            animation="zoomIn" 
-            delay={400} 
-            className="w-full h-28 rounded-[24px] overflow-hidden mb-4 shadow-lg shadow-blue-500/10"
-          >
-            <LinearGradient
-              colors={['#1e40af', '#3b82f6']}
-              start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-              className="flex-1 p-4 justify-center"
+          {/* Center Content: Brand Logo, Title & Core Slogan */}
+          <View className="items-center justify-center">
+            
+            {/* Logo Showcase (Glassmorphic Outer Frame) */}
+            <Animatable.View 
+              animation="zoomIn" 
+              duration={1000} 
+              className={`p-5 rounded-[36px] mb-6 shadow-2xl items-center justify-center border ${
+                isDark ? 'bg-white/5 border-white/10' : 'bg-white/80 border-blue-100 shadow-blue-900/5'
+              }`}
+              style={{
+                shadowColor: isDark ? '#3b82f6' : '#1e3a8a',
+                shadowOffset: { width: 0, height: 12 },
+                shadowOpacity: isDark ? 0.2 : 0.1,
+                shadowRadius: 24,
+                elevation: 10
+              }}
             >
-              <View className="flex-row items-center justify-between">
-                <View className="flex-1 mr-2">
-                  <Text className="text-white text-base font-black mb-0.5">Digital Queue</Text>
-                  <Text className="text-blue-100 text-[9px] font-medium leading-3">No more physical lines. Book instantly from your home comfort.</Text>
+              <Image 
+                source={logo} 
+                style={{ width: 90, height: 90, borderRadius: 22 }} 
+                resizeMode="contain" 
+              />
+            </Animatable.View>
+
+            {/* Brand Title */}
+            <Animatable.View 
+              animation="fadeInUp" 
+              duration={800} 
+              delay={200}
+              className="items-center w-full"
+            >
+              <View className="flex-row items-center justify-center mb-3">
+                <Text className={`text-5xl font-black tracking-tight ${isDark ? 'text-white' : 'text-blue-950'}`}>आराम</Text>
+                <Text className="text-blue-500 text-5xl font-black tracking-tight">Se</Text>
+              </View>
+
+              {/* Slogan */}
+              <Text className={`text-sm font-black text-center tracking-wide mb-2 ${isDark ? 'text-slate-200' : 'text-blue-900/80'}`}>
+                वेळेची बचत, सोपे बुकिंग।
+              </Text>
+              <Text className={`text-[11px] font-semibold text-center leading-5 px-6 ${isDark ? 'text-slate-400/80' : 'text-slate-600'}`}>
+                डिजिटल रांग आणि स्मार्ट अपॉइंटमेंट व्यवस्थापन.{"\n"}रांगेत उभे राहण्याचे दिवस संपले!
+              </Text>
+
+              {/* Minimalist Micro-Feature Pills */}
+              <View className="flex-row items-center justify-center mt-5">
+                <View className={`flex-row items-center border px-3 py-1 rounded-full mx-1 ${isDark ? 'bg-white/5 border-white/5' : 'bg-blue-50 border-blue-100/40'}`}>
+                  <MaterialCommunityIcons name="clock-fast" size={10} color="#3b82f6" />
+                  <Text className={`text-[8px] font-black ml-1 uppercase tracking-wider ${isDark ? 'text-slate-300' : 'text-blue-900/70'}`}>झटपट बुकिंग</Text>
                 </View>
-                <View className="bg-white/20 p-2 rounded-xl">
-                   <MaterialCommunityIcons name="lightning-bolt" size={24} color="#fff" />
+                <View className={`flex-row items-center border px-3 py-1 rounded-full mx-1 ${isDark ? 'bg-white/5 border-white/5' : 'bg-blue-50 border-blue-100/40'}`}>
+                  <MaterialCommunityIcons name="map-marker-radius" size={10} color="#10b981" />
+                  <Text className={`text-[8px] font-black ml-1 uppercase tracking-wider ${isDark ? 'text-slate-300' : 'text-blue-900/70'}`}>ाईव्ह ट्रॅक</Text>
+                </View>
+                <View className={`flex-row items-center border px-3 py-1 rounded-full mx-1 ${isDark ? 'bg-white/5 border-white/5' : 'bg-blue-50 border-blue-100/40'}`}>
+                  <MaterialCommunityIcons name="shield-check" size={10} color="#818cf8" />
+                  <Text className={`text-[8px] font-black ml-1 uppercase tracking-wider ${isDark ? 'text-slate-300' : 'text-blue-900/70'}`}>सुरक्षित</Text>
                 </View>
               </View>
-            </LinearGradient>
-          </Animatable.View>
 
-          {/* Action Button */}
-          <Animatable.View animation="fadeInUp" delay={600} className="mt-2">
-            <TouchableOpacity 
-              className="rounded-2xl overflow-hidden shadow-xl shadow-blue-500/30"
-              onPress={() => navigation.navigate('Login')}
-              activeOpacity={0.9}
-            >
-              <LinearGradient
-                colors={['#3b82f6', '#1d4ed8']}
-                start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-                className="py-3 px-8 flex-row items-center justify-center"
-              >
-                <Text className="text-white font-black text-sm mr-2 tracking-widest">सुरुवात करूया</Text>
-                <MaterialCommunityIcons name="arrow-right" size={18} color="#fff" />
-              </LinearGradient>
-            </TouchableOpacity>
-          </Animatable.View>
-
-          {/* Quick Stats Grid */}
-          <View className="flex-row justify-between mt-6 px-1">
-            <View className="items-center w-[30%]">
-              <MaterialCommunityIcons name="clock-fast" size={18} color="#60a5fa" />
-              <Text className="text-white/40 text-[7px] mt-1 font-bold uppercase tracking-widest">Instant</Text>
-            </View>
-            <View className="items-center w-[30%]">
-              <MaterialCommunityIcons name="shield-check" size={18} color="#10b981" />
-              <Text className="text-white/40 text-[7px] mt-1 font-bold uppercase tracking-widest">Secure</Text>
-            </View>
-            <View className="items-center w-[30%]">
-              <MaterialCommunityIcons name="heart-pulse" size={18} color="#f43f5e" />
-              <Text className="text-white/40 text-[7px] mt-1 font-bold uppercase tracking-widest">Smart</Text>
-            </View>
+            </Animatable.View>
           </View>
 
-          {/* Professional HarIT Branding - Compact Footer */}
-          <Animatable.View 
-            animation="fadeInUp" 
-            delay={800} 
-            className="mt-auto pt-4 items-center"
-          >
-            <View className="bg-white/5 w-full py-3 rounded-2xl border border-white/5 items-center">
-               <View className="flex-row items-center mb-1.5 px-4 h-6">
-                  <Image source={haritLogo} style={{ width: 16, height: 16 }} resizeMode="contain" className="rounded-sm mr-2" />
-                  <Text className="text-white/60 font-black text-[9px] tracking-[2px] uppercase">HarIT Tech Solution</Text>
-               </View>
-               <TouchableOpacity 
-                 onPress={() => Linking.openURL('https://harittech.vercel.app/')}
-                 className="bg-blue-500/10 px-3 py-1 rounded-full border border-blue-500/20"
-               >
-                 <Text className="text-blue-400 text-[7px] font-bold">harittech.app</Text>
-               </TouchableOpacity>
-            </View>
-            <Text className="text-white/10 text-[6px] font-black uppercase tracking-[3px] mt-3">AaramSe © 2026</Text>
-          </Animatable.View>
-        </ScrollView>
-      </SafeAreaView>
-    </View>
+          {/* Bottom Actions & Tech Partner Credits */}
+          <View className="w-full">
+            
+            {/* Action Buttons Container */}
+            <Animatable.View animation="fadeInUp" duration={800} delay={400} className="mb-8">
+              {/* Primary GET STARTED Button */}
+              <TouchableOpacity 
+                className="rounded-2xl overflow-hidden shadow-lg shadow-blue-500/25"
+                onPress={() => navigation.navigate('Login')}
+                activeOpacity={0.9}
+              >
+                <LinearGradient
+                  colors={['#2563eb', '#1d4ed8']}
+                  start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+                  className="py-4 flex-row items-center justify-center"
+                >
+                  <Text className="text-white font-black text-xs tracking-widest uppercase mr-2">सुरुवात करूया / GET STARTED</Text>
+                  <MaterialCommunityIcons name="arrow-right" size={16} color="#fff" />
+                </LinearGradient>
+              </TouchableOpacity>
+
+              {/* Guest Exploration Option */}
+              <TouchableOpacity 
+                onPress={async () => {
+                  await loginAsGuest();
+                }}
+                className="mt-4 py-2 items-center"
+                activeOpacity={0.8}
+              >
+                <Text className="text-blue-500 font-black text-xs uppercase tracking-widest">अतिथी म्हणून सुरू ठेवा / Continue as Guest</Text>
+              </TouchableOpacity>
+            </Animatable.View>
+
+            {/* Minimalist Footer Credits */}
+            <Animatable.View animation="fadeInUp" duration={800} delay={600} className="items-center">
+              <TouchableOpacity 
+                onPress={() => Linking.openURL('https://harittech.vercel.app/')}
+                className={`flex-row items-center border py-1.5 px-4 rounded-xl ${
+                  isDark ? 'bg-white/5 border-white/5 opacity-40 hover:opacity-100' : 'bg-blue-50 border-blue-100/30'
+                }`}
+              >
+                <Image source={haritLogo} style={{ width: 10, height: 10 }} className="rounded-sm mr-2" />
+                <Text className={`text-[8px] font-bold tracking-[1.5px] uppercase ${isDark ? 'text-white' : 'text-blue-900/60'}`}>harittech.app</Text>
+              </TouchableOpacity>
+              <Text className={`text-[6px] font-bold uppercase tracking-[2px] mt-1.5 ${isDark ? 'text-white/10' : 'text-slate-400/50'}`}>AaramSe © 2026</Text>
+            </Animatable.View>
+          </View>
+
+        </SafeAreaView>
+      </LinearGradient>
+    </ImageBackground>
   );
 };
 

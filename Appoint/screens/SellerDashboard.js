@@ -26,22 +26,29 @@ import { Modal as RNModal } from 'react-native';
 import ViewShot from "react-native-view-shot";
 import * as Sharing from 'expo-sharing';
 import logo from '../assets/logo.png';
+import { useTheme } from '../middleware/ThemeContext';
 
 const { width } = Dimensions.get("window");
 
 const SellerDashboard = () => {
   const navigation = useNavigation();
+  const { theme } = useTheme();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [stores, setStores] = useState([]);
   const [userId, setUserId] = useState(null);
   const [alertVisible, setAlertVisible] = useState(false);
-  const [alertConfig, setAlertConfig] = useState({ title: '', message: '', type: 'info' });
+  const [alertConfig, setAlertConfig] = useState({ title: '', message: '', type: 'info', onConfirm: null, cancelText: null });
   const [qrModalVisible, setQrModalVisible] = useState(false);
+
+  const showCustomAlert = (title, message, type = "info", onConfirm = null, cancelText = null) => {
+    setAlertConfig({ title, message, type, onConfirm, cancelText });
+    setAlertVisible(true);
+  };
   const [selectedStoreForQr, setSelectedStoreForQr] = useState(null);
   const qrViewRef = useRef();
 
-
+  const isDark = theme === 'dark';
 
   const fetchData = useCallback(async () => {
     try {
@@ -93,48 +100,54 @@ const SellerDashboard = () => {
   };
 
   const handleDeleteStore = (storeId) => {
-    Alert.alert("Delete Store", "This will permanently remove your store and all its data. Continue?", [
-      { text: "Cancel", style: "cancel" },
-      { text: "Delete", style: "destructive", onPress: async () => {
+    showCustomAlert(
+      "Delete Store",
+      "This will permanently remove your store and all its data. Continue?",
+      "warning",
+      async () => {
+        setAlertVisible(false);
         try {
           const token = await AsyncStorage.getItem("userToken");
           await axios.delete(`${API_BASE_URL}/api/store/delete/${storeId}`, {
             headers: { Authorization: `Bearer ${token}` }
           });
-          setAlertConfig({ title: "Success", message: "Store deleted successfully.", type: "success" });
-          setAlertVisible(true);
-          fetchData();
+          showCustomAlert("Success", "Store deleted successfully.", "success", () => {
+            setAlertVisible(false);
+            fetchData();
+          });
         } catch (error) {
-          setAlertConfig({ title: "Error", message: "Could not delete store.", type: "error" });
-          setAlertVisible(true);
+          showCustomAlert("Error", "Could not delete store.", "error");
         }
-      }}
-    ]);
+      },
+      "Cancel"
+    );
   };
 
   if (loading) {
     return (
-      <View className="flex-1 justify-center items-center bg-slate-50">
+      <View className={`flex-1 justify-center items-center ${isDark ? 'bg-[#020617]' : 'bg-slate-50'}`}>
         <ActivityIndicator size="large" color="#1e40af" />
       </View>
     );
   }
 
   return (
-    <View className="flex-1 bg-slate-50">
-      <StatusBar barStyle="dark-content" />
+    <View className={`flex-1 ${isDark ? 'bg-[#020617]' : 'bg-slate-50'}`}>
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
       <SafeAreaView className="flex-1">
         <View className="px-6 pt-6 pb-2">
             <View className="flex-row items-center justify-between mb-8">
                <View className="flex-row items-center">
                   <TouchableOpacity 
                     onPress={() => navigation.goBack()}
-                    className="w-12 h-12 bg-white items-center justify-center rounded-2xl shadow-sm border border-slate-100 mr-4"
+                    className={`w-12 h-12 items-center justify-center rounded-2xl shadow-sm border mr-4 ${
+                      isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'
+                    }`}
                   >
-                    <MaterialCommunityIcons name="chevron-left" size={28} color="#1e293b" />
+                    <MaterialCommunityIcons name="chevron-left" size={28} color={isDark ? "#fff" : "#1e293b"} />
                   </TouchableOpacity>
                   <View>
-                    <Text className="text-xl font-black text-slate-800">My Stores</Text>
+                    <Text className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-800'}`}>My Stores</Text>
                     <Text className="text-blue-500 font-bold text-[9px] uppercase tracking-[2px]">Business Manager</Text>
                   </View>
                </View>
@@ -154,10 +167,12 @@ const SellerDashboard = () => {
         >
           {stores.length === 0 ? (
             <Animatable.View animation="fadeInUp" className="items-center justify-center mt-20">
-              <View className="bg-white p-10 rounded-[48px] items-center border border-slate-100 shadow-sm">
-                <MaterialCommunityIcons name="store-plus-outline" size={80} color="#e2e8f0" />
-                <Text className="text-slate-800 text-xl font-black mt-6">No stores registered</Text>
-                <Text className="text-slate-400 text-center font-medium mt-2 px-6">Start your business journey with AaramSe by registering your first shop.</Text>
+              <View className={`p-10 rounded-[48px] items-center border shadow-sm ${
+                isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'
+              }`}>
+                <MaterialCommunityIcons name="store-plus-outline" size={80} color={isDark ? "#1e293b" : "#e2e8f0"} />
+                <Text className={`text-xl font-black mt-6 ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>No stores registered</Text>
+                <Text className={`text-center font-medium mt-2 px-6 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Start your business journey with AaramSe by registering your first shop.</Text>
                 <TouchableOpacity 
                   onPress={() => navigation.navigate("CreateStore")}
                   className="bg-blue-600 px-6 py-3.5 rounded-2xl mt-10 shadow-xl shadow-blue-500/20"
@@ -172,17 +187,21 @@ const SellerDashboard = () => {
                 key={store._id}
                 animation="fadeInUp"
                 delay={index * 100}
-                className="bg-white rounded-[40px] p-6 mb-6 shadow-sm border border-slate-100"
+                className={`rounded-[40px] p-6 mb-6 border ${
+                  isDark ? 'bg-slate-900 border-slate-800/80 shadow-none' : 'bg-white border-slate-100 shadow-sm'
+                }`}
               >
                 <View className="flex-row items-center mb-6">
-                  <View className="w-16 h-16 bg-blue-50 rounded-2xl items-center justify-center mr-4">
+                  <View className={`w-16 h-16 rounded-2xl items-center justify-center mr-4 ${
+                    isDark ? 'bg-blue-500/10' : 'bg-blue-55'
+                  }`}>
                     <MaterialCommunityIcons name="storefront" size={32} color="#3b82f6" />
                   </View>
                   <View className="flex-1">
-                    <Text className="text-slate-900 font-black text-base" numberOfLines={1}>{store.name}</Text>
+                    <Text className={`font-black text-base ${isDark ? 'text-slate-100' : 'text-slate-900'}`} numberOfLines={1}>{store.name}</Text>
                     <View className="flex-row items-center">
                        <View className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-2" />
-                       <Text className="text-slate-400 font-bold text-[9px] uppercase tracking-widest">{store.type}</Text>
+                       <Text className={`font-bold text-[9px] uppercase tracking-widest ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{store.type}</Text>
                     </View>
                   </View>
                   <View className="flex-row items-center">
@@ -201,39 +220,56 @@ const SellerDashboard = () => {
                   </View>
                 </View>
 
-                <View className="flex-row justify-between mb-6 bg-slate-50 p-4 rounded-2xl">
+                <View className={`flex-row justify-between mb-6 p-4 rounded-2xl ${
+                  isDark ? 'bg-slate-950' : 'bg-slate-50'
+                }`}>
                    <View className="items-center flex-1">
-                      <Text className="text-slate-800 font-black text-base">{store.appointmentSlots?.length || 0}</Text>
-                      <Text className="text-slate-400 text-[9px] font-black uppercase tracking-widest">Days</Text>
+                      <Text className={`font-black text-base ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>{store.appointmentSlots?.length || 0}</Text>
+                      <Text className={`text-[9px] font-black uppercase tracking-widest ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Days</Text>
                    </View>
-                   <View className="w-[1px] h-6 bg-slate-200" />
+                   <View className={`w-[1px] h-6 ${isDark ? 'bg-slate-850' : 'bg-slate-200'}`} />
                    <View className="items-center flex-1">
-                      <Text className="text-emerald-600 font-black text-base">{store.currentQueueNumber || 0}</Text>
-                      <Text className="text-slate-400 text-[9px] font-black uppercase tracking-widest">In Queue</Text>
+                      <Text className="text-emerald-500 font-black text-base">{store.currentQueueNumber || 0}</Text>
+                      <Text className={`text-[9px] font-black uppercase tracking-widest ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>In Queue</Text>
                    </View>
                 </View>
 
-                <View className="flex-row space-x-2">
+                <View className="flex-row flex-wrap justify-between">
                    <TouchableOpacity 
-                     onPress={() => navigation.navigate("StorePage", { storeId: store._id })}
-                     className="flex-1 bg-white border border-slate-100 py-3 rounded-xl items-center flex-row justify-center"
+                     onPress={() => navigation.navigate("UpdateSlots", { storeId: store._id })}
+                     className="bg-indigo-650 py-3 rounded-2xl items-center flex-row justify-center shadow-md shadow-indigo-650/20"
+                     style={{ width: '48%', marginBottom: 10, backgroundColor: '#4f46e5' }}
                    >
-                     <MaterialCommunityIcons name="eye-outline" size={16} color="#64748b" />
-                     <Text className="text-slate-600 font-black ml-1.5 uppercase text-[9px] tracking-widest">Profile</Text>
-                   </TouchableOpacity>
-                   <TouchableOpacity 
-                     onPress={() => navigation.navigate("EditStore", { storeId: store._id })}
-                     className="flex-1 bg-blue-50 py-3 rounded-xl items-center flex-row justify-center border border-blue-100"
-                   >
-                     <MaterialCommunityIcons name="cog-outline" size={16} color="#1e40af" />
-                     <Text className="text-blue-900 font-black ml-1.5 uppercase text-[9px] tracking-widest">Edit</Text>
+                     <MaterialCommunityIcons name="calendar-clock" size={16} color="#fff" />
+                     <Text className="text-white font-black ml-1.5 uppercase text-[9px] tracking-widest">Slots</Text>
                    </TouchableOpacity>
                    <TouchableOpacity 
                      onPress={() => navigation.navigate("History", { storeId: store._id })}
-                     className="flex-1 bg-emerald-500 py-3 rounded-xl items-center flex-row justify-center shadow-md shadow-emerald-500/20"
+                     style={{ width: '48%', marginBottom: 10 }}
+                     className="bg-emerald-500 py-3 rounded-2xl items-center flex-row justify-center shadow-md shadow-emerald-500/20"
                    >
                      <MaterialCommunityIcons name="history" size={16} color="#fff" />
                      <Text className="text-white font-black ml-1.5 uppercase text-[9px] tracking-widest">Records</Text>
+                   </TouchableOpacity>
+                   <TouchableOpacity 
+                     onPress={() => navigation.navigate("StorePage", { storeId: store._id })}
+                     style={{ width: '48%' }}
+                     className={`border py-3 rounded-2xl items-center flex-row justify-center ${
+                       isDark ? 'bg-slate-950 border-slate-850' : 'bg-white border-slate-100'
+                     }`}
+                   >
+                     <MaterialCommunityIcons name="eye-outline" size={16} color={isDark ? "#475569" : "#64748b"} />
+                     <Text className={`font-black ml-1.5 uppercase text-[9px] tracking-widest ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>View Shop</Text>
+                   </TouchableOpacity>
+                   <TouchableOpacity 
+                     onPress={() => navigation.navigate("EditStore", { storeId: store._id })}
+                     style={{ width: '48%' }}
+                     className={`py-3 rounded-2xl items-center flex-row justify-center border ${
+                       isDark ? 'bg-blue-500/10 border-blue-500/20' : 'bg-blue-50 border-blue-100'
+                     }`}
+                   >
+                     <MaterialCommunityIcons name="cog-outline" size={16} color={isDark ? "#3b82f6" : "#1e40af"} />
+                     <Text className={`font-black ml-1.5 uppercase text-[9px] tracking-widest ${isDark ? 'text-blue-400' : 'text-blue-900'}`}>Settings</Text>
                    </TouchableOpacity>
                 </View>
               </Animatable.View>
@@ -245,9 +281,11 @@ const SellerDashboard = () => {
       <CustomAlert 
         visible={alertVisible}
         onClose={() => setAlertVisible(false)}
+        onConfirm={alertConfig.onConfirm}
         title={alertConfig.title}
         message={alertConfig.message}
         type={alertConfig.type}
+        cancelText={alertConfig.cancelText}
       />
 
       <RNModal
@@ -263,7 +301,9 @@ const SellerDashboard = () => {
         >
           <Animatable.View 
             animation="zoomIn" 
-            className="bg-white p-0 rounded-[48px] items-center w-full max-w-sm overflow-hidden"
+            className={`p-0 rounded-[48px] items-center w-full max-w-sm overflow-hidden ${
+              isDark ? 'bg-slate-900 border border-slate-800' : 'bg-white'
+            }`}
           >
             <ViewShot ref={qrViewRef} options={{ format: "jpg", quality: 1.0 }}>
               <View className="bg-white p-8 items-center">
@@ -287,7 +327,7 @@ const SellerDashboard = () => {
                 </View>
 
                 <View className="flex-row items-center bg-blue-50 px-4 py-2 rounded-full mb-4">
-                  <MaterialCommunityIcons name="shield-check" size={14} color="#3b82f6" />
+                  <MaterialCommunityIcons name="default-api:ask_permission" size={14} color="#3b82f6" />
                   <Text className="text-blue-700 font-bold text-[9px] uppercase tracking-widest ml-2">Official Verified Store</Text>
                 </View>
 
@@ -295,12 +335,16 @@ const SellerDashboard = () => {
               </View>
             </ViewShot>
 
-            <View className="flex-row p-6 bg-slate-50 w-full justify-between items-center border-t border-slate-100">
+            <View className={`flex-row p-6 w-full justify-between items-center border-t ${
+              isDark ? 'bg-slate-950 border-slate-850' : 'bg-slate-50 border-slate-100'
+            }`}>
               <TouchableOpacity 
                 onPress={() => setQrModalVisible(false)}
-                className="flex-1 bg-white py-4 rounded-2xl items-center mr-3 border border-slate-200"
+                className={`flex-1 py-4 rounded-2xl items-center mr-3 border ${
+                  isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
+                }`}
               >
-                <Text className="text-slate-600 font-black uppercase text-xs tracking-widest">Close</Text>
+                <Text className={`font-black uppercase text-xs tracking-widest ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Close</Text>
               </TouchableOpacity>
               
               <TouchableOpacity 

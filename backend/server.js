@@ -1,4 +1,7 @@
 // Import dependencies using ES module syntax
+import dns from 'dns';
+dns.setServers(['8.8.8.8', '1.1.1.1']);
+
 import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
@@ -6,7 +9,8 @@ import bodyParser from 'body-parser';
 import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
 import authRoutes from './routes/auth.route.js';
-import storeRoutes from './routes/store.route.js' // Make sure to add .js to the import path
+import storeRoutes from './routes/store.route.js';
+import otpRoutes from './routes/otp.route.js';
 import fs from 'fs';
 
 // Create uploads directory if it doesn't exist
@@ -43,6 +47,7 @@ mongoose.connect(process.env.MONGO_URI)
 // Use routes
 app.use('/api/auth', authRoutes);
 app.use('/api/store', storeRoutes);
+app.use('/api/otp', otpRoutes);
 
 // Test Route
 app.get('/', (req, res) => {

@@ -3,11 +3,16 @@ import { View, Text, TouchableOpacity, Dimensions, Modal } from 'react-native';
 import * as Animatable from 'react-native-animatable';
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTheme } from '../middleware/ThemeContext';
 
 const { width } = Dimensions.get('window');
 
 const SuccessPopup = ({ visible, onClose, title = "Booking Successful!", message = "Your appointment has been confirmed.", buttonText = "Back to Home" }) => {
+  const { theme } = useTheme();
+
   if (!visible) return null;
+
+  const isDark = theme === 'dark';
 
   return (
     <Modal
@@ -19,11 +24,13 @@ const SuccessPopup = ({ visible, onClose, title = "Booking Successful!", message
         <Animatable.View 
           animation="zoomIn"
           duration={500}
-          className="bg-white rounded-[48px] p-8 w-full max-w-sm items-center shadow-2xl overflow-hidden"
+          className={`rounded-[48px] p-8 w-full max-w-sm items-center shadow-2xl overflow-hidden ${
+            isDark ? 'bg-slate-900 border border-slate-800' : 'bg-white'
+          }`}
         >
           {/* Animated Background Circles */}
-          <View className="absolute top-0 right-0 w-32 h-32 bg-emerald-50 rounded-full -mr-16 -mt-16 opacity-50" />
-          <View className="absolute bottom-0 left-0 w-32 h-32 bg-blue-50 rounded-full -ml-16 -mb-16 opacity-50" />
+          <View className={`absolute top-0 right-0 w-32 h-32 rounded-full -mr-16 -mt-16 opacity-50 ${isDark ? 'bg-slate-950' : 'bg-emerald-50'}`} />
+          <View className={`absolute bottom-0 left-0 w-32 h-32 rounded-full -ml-16 -mb-16 opacity-50 ${isDark ? 'bg-slate-950' : 'bg-blue-50'}`} />
 
           {/* Icon Animation */}
           <Animatable.View 
@@ -37,7 +44,7 @@ const SuccessPopup = ({ visible, onClose, title = "Booking Successful!", message
           <Animatable.Text 
             animation="fadeInUp"
             delay={500}
-            className="text-slate-900 font-black text-2xl text-center mb-3"
+            className={`font-black text-2xl text-center mb-3 ${isDark ? 'text-white' : 'text-slate-900'}`}
           >
             {title}
           </Animatable.Text>
@@ -45,7 +52,7 @@ const SuccessPopup = ({ visible, onClose, title = "Booking Successful!", message
           <Animatable.Text 
             animation="fadeInUp"
             delay={600}
-            className="text-slate-500 font-medium text-center mb-10 leading-6"
+            className={`font-medium text-center mb-10 leading-6 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}
           >
             {message}
           </Animatable.Text>

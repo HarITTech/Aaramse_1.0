@@ -27,6 +27,8 @@ import CustomAlert from '../components/CustomAlert';
 import { useLanguage } from "../middleware/LanguageContext";
 import QRCode from 'react-native-qrcode-svg';
 import { Modal as RNModal } from 'react-native';
+import { useAuth } from "../middleware/AuthContext";
+import { useTheme } from "../middleware/ThemeContext";
 
 const { width } = Dimensions.get("window");
 
@@ -34,6 +36,8 @@ const StorePage = () => {
   const route = useRoute();
   const navigation = useNavigation();
   const { t } = useLanguage();
+  const { logout, isGuest } = useAuth();
+  const { theme } = useTheme();
   const [userId, setUserId] = useState(null);
   const { storeId } = route.params;
   const [storeDetails, setStoreDetails] = useState(null);
@@ -45,8 +49,15 @@ const StorePage = () => {
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [contactModalVisible, setContactModalVisible] = useState(false);
   const [alertVisible, setAlertVisible] = useState(false);
-  const [alertConfig, setAlertConfig] = useState({ title: '', message: '', type: 'info' });
+  const [alertConfig, setAlertConfig] = useState({ title: '', message: '', type: 'info', onConfirm: null, cancelText: null });
   const [qrModalVisible, setQrModalVisible] = useState(false);
+
+  const showCustomAlert = (title, message, type = "info", onConfirm = null, cancelText = null) => {
+    setAlertConfig({ title, message, type, onConfirm, cancelText });
+    setAlertVisible(true);
+  };
+
+  const isDark = theme === 'dark';
 
   const fetchTokenAndDecode = async () => {
     try {
@@ -56,9 +67,9 @@ const StorePage = () => {
         const userId = decodedToken.user?.id;
         if (userId) {
           setUserId(userId);
-          fetchStoreDetails();
         }
       }
+      fetchStoreDetails();
     } catch (error) {
       console.error("Token fetch failed:", error);
     }
@@ -94,9 +105,22 @@ const StorePage = () => {
   };
 
   const handleBookNow = () => {
+    if (isGuest) {
+      showCustomAlert(
+        "लॉगिन आवश्यक",
+        "अपॉइंटमेंट बुकिंग करण्यासाठी कृपया लॉगिन करा किंवा नवीन खाते तयार करा.",
+        "warning",
+        async () => {
+          setAlertVisible(false);
+          await logout();
+        },
+        "Cancel"
+      );
+      return;
+    }
+
     if (selectedSlot && selectedTimeSlot) {
       if (isOwner) {
-        // Find the selected time slot details for the header
         let selectedTimeLabel = "";
         storeDetails.appointmentSlots.forEach(slot => {
           const ts = slot.timeSlots.find(t => t._id === selectedTimeSlot);
@@ -116,13 +140,26 @@ const StorePage = () => {
         });
       }
     } else {
-      Alert.alert('Selection Required', 'Please choose a time slot first.');
+      showCustomAlert('Selection Required', 'Please choose a time slot first.', 'info');
     }
   };
 
   const handleUsers = async () => {
+    if (isGuest) {
+      showCustomAlert(
+        "लॉगिन आवश्यक",
+        "रांगेतील स्थान तपासण्यासाठी कृपया लॉगिन करा किंवा नवीन खाते तयार करा.",
+        "warning",
+        async () => {
+          setAlertVisible(false);
+          await logout();
+        },
+        "Cancel"
+      );
+      return;
+    }
     if (!selectedTimeSlot) {
-      Alert.alert("Notice", "Select a time slot to check queue position.");
+      showCustomAlert("Notice", "Select a time slot to check queue position.", "info");
       return;
     }
     setLoadingUsers(true);
@@ -155,9 +192,9 @@ const StorePage = () => {
 
   if (loading) {
     return (
-      <View className="flex-1 justify-center items-center bg-white">
+      <View className={`flex-1 justify-center items-center ${isDark ? 'bg-[#020617]' : 'bg-white'}`}>
         <ActivityIndicator size="large" color="#1e40af" />
-        <Text className="mt-4 text-gray-500 font-medium">Loading Store Details...</Text>
+        <Text className={`mt-4 font-medium ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Loading Store Details...</Text>
       </View>
     );
   }
@@ -169,9 +206,9 @@ const StorePage = () => {
   ) || [];
 
   return (
-    <View className="flex-1 bg-white">
+    <View className={`flex-1 ${isDark ? 'bg-[#020617]' : 'bg-white'}`}>
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 150 }}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 160 }}>
         
         {/* Modern Image Slider with Overlay */}
         <View className="h-72 relative">
@@ -181,21 +218,21 @@ const StorePage = () => {
             resizeMode="cover"
           />
           <LinearGradient
-            colors={['transparent', 'rgba(0,0,0,0.9)']}
+            colors={['transparent', isDark ? 'rgba(2, 6, 23, 0.95)' : 'rgba(0,0,0,0.85)']}
             className="absolute bottom-0 left-0 right-0 h-40 justify-end p-6"
           >
-            <Animatable.Text animation="fadeInLeft" className="text-white text-3xl font-black">{storeDetails.name}</Animatable.Text>
-            <View className="flex-row items-center mt-3">
+            <Animatable.Text animation="fadeInLeft" className="text-white text-2xl font-black">{storeDetails.name}</Animatable.Text>
+            <View className="flex-row items-center mt-2">
                <View className="bg-emerald-500/20 px-3 py-1 rounded-lg border border-emerald-500/30 flex-row items-center">
-                  <MaterialCommunityIcons name="map-marker" size={16} color="#10b981" />
-                  <Text className="text-emerald-400 ml-1 font-black text-xs uppercase tracking-widest">{storeDetails.location}</Text>
+                  <MaterialCommunityIcons name="map-marker" size={14} color="#10b981" />
+                  <Text className="text-emerald-400 ml-1 font-black text-[10px] uppercase tracking-widest">{storeDetails.location}</Text>
                </View>
             </View>
           </LinearGradient>
           
           <TouchableOpacity 
             onPress={() => navigation.goBack()}
-            className="absolute top-12 left-6 bg-white/20 w-10 h-10 items-center justify-center rounded-xl backdrop-blur-md border border-white/20 shadow-lg"
+            className="absolute top-12 left-6 bg-black/20 w-10 h-10 items-center justify-center rounded-xl backdrop-blur-md border border-white/20 shadow-lg"
           >
              <MaterialCommunityIcons name="chevron-left" size={24} color="#fff" />
           </TouchableOpacity>
@@ -210,34 +247,36 @@ const StorePage = () => {
           )}
         </View>
 
-        <View className="bg-white rounded-t-3xl -mt-6 px-6 py-8">
+        <View className={`rounded-t-3xl -mt-6 px-6 py-8 ${isDark ? 'bg-[#070b16]' : 'bg-white'}`}>
           {/* Quick Stats Grid */}
-          <View className="flex-row justify-between mb-8 bg-slate-50 p-5 rounded-[28px] border border-slate-100">
-            <StatItem icon="storefront-outline" label="Type" value={storeDetails.type} color="#3b82f6" />
-            <View className="w-[1px] h-8 bg-slate-200 self-center" />
-            <StatItem icon="account-outline" label="Owner" value={storeDetails.fname} color="#10b981" />
-            <View className="w-[1px] h-8 bg-slate-200 self-center" />
-            <StatItem icon="account-group-outline" label="Queue" value={storeDetails.currentQueueNumber || 0} color="#f59e0b" />
+          <View className={`flex-row justify-between mb-8 p-5 rounded-[28px] border ${
+            isDark ? 'bg-white/5 border-white/10' : 'bg-slate-50 border-slate-100'
+          }`}>
+            <StatItem icon="storefront-outline" label="Type" value={storeDetails.type} color="#3b82f6" isDark={isDark} />
+            <View className={`w-[1px] h-8 self-center ${isDark ? 'bg-white/10' : 'bg-slate-200'}`} />
+            <StatItem icon="account-outline" label="Owner" value={storeDetails.fname} color="#10b981" isDark={isDark} />
+            <View className={`w-[1px] h-8 self-center ${isDark ? 'bg-white/10' : 'bg-slate-200'}`} />
+            <StatItem icon="account-group-outline" label="Queue" value={storeDetails.currentQueueNumber || 0} color="#f59e0b" isDark={isDark} />
           </View>
 
           <View className="mb-8">
-            <Text className="text-slate-900 text-xl font-black mb-3">About the Store</Text>
-            <Text className="text-slate-500 leading-6 text-sm font-medium">{storeDetails.description}</Text>
+            <Text className={`text-lg font-black mb-3 ${isDark ? 'text-white' : 'text-slate-900'}`}>About the Store</Text>
+            <Text className={`leading-6 text-sm font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{storeDetails.description}</Text>
           </View>
 
           {/* Appointment Selection Section */}
           <View className="mb-8">
             <View className="flex-row justify-between items-center mb-5">
-               <Text className="text-slate-900 text-xl font-black">Choose Slot</Text>
-               <View className="bg-blue-50 px-3 py-1.5 rounded-xl border border-blue-100">
-                  <Text className="text-blue-600 text-xs font-black uppercase tracking-widest">{format(new Date(), 'EEEE, MMM dd')}</Text>
+               <Text className={`text-lg font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>Choose Slot</Text>
+               <View className={`px-3 py-1.5 rounded-xl border ${isDark ? 'bg-white/5 border-white/10' : 'bg-blue-50 border-blue-100'}`}>
+                  <Text className={`text-[10px] font-black uppercase tracking-widest ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>{format(new Date(), 'EEEE, MMM dd')}</Text>
                </View>
             </View>
 
             {todaySlots.length > 0 ? (
               todaySlots.map((slot, sIdx) => (
                 <View key={sIdx} className="mb-4">
-                  <View className="flex-row flex-wrap">
+                  <View className="flex-row flex-wrap justify-start">
                     {slot.timeSlots?.map((ts, tIdx) => {
                       const isSelected = selectedTimeSlot === ts._id;
                       return (
@@ -245,18 +284,32 @@ const StorePage = () => {
                           key={tIdx}
                           activeOpacity={0.7}
                           onPress={() => handleSlotSelect(slot._id, ts._id)}
-                          className={`mr-2.5 mb-3 px-5 py-3.5 rounded-2xl border-2 ${isSelected ? 'bg-blue-600 border-blue-600 shadow-xl shadow-blue-500/40' : 'bg-white border-slate-100 shadow-sm'}`}
+                          style={{ 
+                            width: '31%', 
+                            marginRight: (tIdx + 1) % 3 === 0 ? 0 : '3.5%',
+                            marginBottom: 12 
+                          }}
+                          className={`py-3 rounded-2xl border-2 items-center justify-center ${
+                            isSelected 
+                              ? 'bg-blue-600 border-blue-600 shadow-lg shadow-blue-500/30' 
+                              : (isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100 shadow-sm')
+                          }`}
                         >
-                          <View className="flex-row items-center">
-                            <MaterialCommunityIcons 
-                              name={isSelected ? "clock-check" : "clock-outline"} 
-                              size={16} 
-                              color={isSelected ? "#fff" : "#64748b"} 
-                            />
-                            <Text className={`font-black ml-2 text-xs ${isSelected ? 'text-white' : 'text-slate-800'}`}>
-                              {ts.startTime} - {ts.endTime}
-                            </Text>
-                          </View>
+                          <MaterialCommunityIcons 
+                            name={isSelected ? "clock-check" : "clock-outline"} 
+                            size={14} 
+                            color={isSelected ? "#fff" : (isDark ? "#94a3b8" : "#64748b")} 
+                          />
+                          <Text className={`font-black text-[10px] mt-1 text-center ${
+                            isSelected ? 'text-white' : (isDark ? 'text-slate-300' : 'text-slate-700')
+                          }`}>
+                            {ts.startTime}
+                          </Text>
+                          <Text className={`font-bold text-[8px] opacity-65 text-center ${
+                            isSelected ? 'text-white' : (isDark ? 'text-slate-400' : 'text-slate-500')
+                          }`}>
+                            to {ts.endTime}
+                          </Text>
                         </TouchableOpacity>
                       )
                     })}
@@ -264,10 +317,10 @@ const StorePage = () => {
                 </View>
               ))
             ) : (
-              <View className="bg-red-50 p-6 rounded-3xl items-center border border-red-50">
+              <View className={`p-6 rounded-3xl items-center border ${isDark ? 'bg-red-950/15 border-red-900/20' : 'bg-red-50 border-red-50'}`}>
                  <MaterialCommunityIcons name="calendar-lock-outline" size={40} color="#ef4444" />
                  <Text className="text-red-500 font-black text-lg mt-4">Closed Today</Text>
-                 <Text className="text-red-400 text-center font-medium mt-1">Check back later for new slots.</Text>
+                 <Text className={`text-center font-medium mt-1 ${isDark ? 'text-red-400/80' : 'text-red-400'}`}>Check back later for new slots.</Text>
               </View>
             )}
           </View>
@@ -275,24 +328,26 @@ const StorePage = () => {
           {/* Feedbacks Section */}
           {storeDetails?.feedbacks?.length > 0 && (
             <View className="mb-8 pl-1">
-              <Text className="text-slate-900 text-xl font-black mb-4">What People Say</Text>
+              <Text className={`text-lg font-black mb-4 ${isDark ? 'text-white' : 'text-slate-900'}`}>What People Say</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} className="pb-2">
                 {storeDetails.feedbacks.map((fb, fIdx) => (
-                  <View key={fIdx} className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm mr-4 w-64">
+                  <View key={fIdx} className={`p-5 rounded-3xl border shadow-sm mr-4 w-64 ${
+                    isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'
+                  }`}>
                     <View className="flex-row items-center mb-3">
-                      <View className="w-10 h-10 bg-blue-50 rounded-xl items-center justify-center mr-3">
-                        <Text className="text-blue-600 font-black text-lg">{fb.user?.name?.charAt(0) || 'U'}</Text>
+                      <View className="w-10 h-10 bg-blue-55 rounded-xl items-center justify-center mr-3 border border-blue-500/20">
+                        <Text className="text-blue-500 font-black text-lg">{fb.user?.name?.charAt(0) || 'U'}</Text>
                       </View>
-                      <View>
-                        <Text className="text-slate-800 font-bold text-sm" numberOfLines={1}>{fb.user?.name || 'User'}</Text>
+                      <View className="flex-1">
+                        <Text className={`font-bold text-sm ${isDark ? 'text-white' : 'text-slate-800'}`} numberOfLines={1}>{fb.user?.name || 'User'}</Text>
                         <View className="flex-row items-center mt-1">
                           {[1, 2, 3, 4, 5].map(star => (
-                            <MaterialCommunityIcons key={star} name={star <= fb.rating ? "star" : "star-outline"} size={12} color={star <= fb.rating ? "#f59e0b" : "#cbd5e1"} />
+                            <MaterialCommunityIcons key={star} name={star <= fb.rating ? "star" : "star-outline"} size={12} color={star <= fb.rating ? "#f59e0b" : "#475569"} />
                           ))}
                         </View>
                       </View>
                     </View>
-                    {fb.comment ? <Text className="text-slate-500 text-xs italic" numberOfLines={3}>"{fb.comment}"</Text> : null}
+                    {fb.comment ? <Text className={`text-xs italic ${isDark ? 'text-slate-400' : 'text-slate-500'}`} numberOfLines={3}>"{fb.comment}"</Text> : null}
                   </View>
                 ))}
               </ScrollView>
@@ -300,7 +355,11 @@ const StorePage = () => {
           )}
 
           {/* User Status / Queue Checker */}
-          <Animatable.View animation="fadeInUp" delay={400} className="bg-blue-900 p-5 rounded-3xl shadow-2xl">
+          <Animatable.View 
+            animation="fadeInUp" 
+            delay={400} 
+            className={`p-5 rounded-3xl shadow-xl ${isDark ? 'bg-slate-900 border border-slate-850' : 'bg-blue-900'}`}
+          >
             <View className="flex-row justify-between items-center mb-4">
                <Text className="text-white font-black text-lg">My Position</Text>
                <TouchableOpacity 
@@ -311,11 +370,16 @@ const StorePage = () => {
                </TouchableOpacity>
             </View>
 
-            {loadingUsers ? (
+            {isGuest ? (
+               <View className="flex-row items-center bg-blue-800/20 p-4 rounded-2xl border border-blue-800/30">
+                  <MaterialCommunityIcons name="information-outline" size={20} color="#60a5fa" />
+                  <Text className="text-blue-200 font-medium ml-3 flex-1 text-xs leading-4">लॉगिन केल्यानंतर तुम्ही तुमचे रांगेतील स्थान लाईव्ह पाहू शकता.</Text>
+               </View>
+            ) : loadingUsers ? (
                <ActivityIndicator color="#fff" />
             ) : bookedUsers.length > 0 ? (
-              bookedUsers.map((user, idx) => (
-                 <Animatable.View animation="pulse" iterationCount="infinite" key={idx} className="bg-white/10 p-6 rounded-3xl flex-row justify-between items-center border border-white/20">
+               bookedUsers.map((user, idx) => (
+                  <Animatable.View animation="pulse" iterationCount="infinite" key={idx} className="bg-white/10 p-6 rounded-3xl flex-row justify-between items-center border border-white/20">
                     <View>
                         <Text className="text-blue-200 text-[10px] font-black uppercase tracking-widest mb-1">Queue Status</Text>
                         <Text className="text-white text-4xl font-black">#{user.sequenceNumber}</Text>
@@ -323,10 +387,10 @@ const StorePage = () => {
                     <View className="bg-emerald-500 w-16 h-16 rounded-full items-center justify-center shadow-lg shadow-emerald-500/30">
                         <MaterialCommunityIcons name="check-decagram" size={32} color="#fff" />
                     </View>
-                 </Animatable.View>
-              ))
+                  </Animatable.View>
+               ))
             ) : (
-               <View className="flex-row items-center bg-blue-800/50 p-4 rounded-2xl border border-blue-800">
+               <View className="flex-row items-center bg-blue-800/30 p-4 rounded-2xl border border-blue-800/40">
                   <MaterialCommunityIcons name="information-outline" size={20} color="#93c5fd" />
                   <Text className="text-blue-100 font-medium ml-3 flex-1">Book a slot to view your live position in the queue.</Text>
                </View>
@@ -335,19 +399,44 @@ const StorePage = () => {
         </View>
       </ScrollView>
 
-      {/* Floating Action Buttons */}
-      <View className="absolute bottom-8 left-5 right-5 flex-row items-center">
+      {/* Modern Anchored Bottom Action Bar */}
+      <View className={`absolute bottom-0 left-0 right-0 p-5 pb-8 border-t flex-row items-center justify-between z-30 ${
+        isDark ? 'bg-[#070b16]/95 border-slate-900 shadow-2xl' : 'bg-white/95 border-slate-100 shadow-lg shadow-slate-200'
+      }`}>
         <TouchableOpacity
           onPress={() => setContactModalVisible(true)}
-          className="bg-white w-14 h-14 rounded-2xl items-center justify-center shadow-2xl border border-slate-100 mr-3"
+          activeOpacity={0.7}
+          className={`w-14 h-14 rounded-2xl items-center justify-center border mr-3 ${
+            isDark ? 'bg-slate-900 border-slate-800' : 'bg-slate-50 border-slate-200'
+          }`}
         >
-          <MaterialCommunityIcons name="phone-outline" size={24} color="#1e40af" />
+          <MaterialCommunityIcons name="phone-outline" size={24} color="#3b82f6" />
         </TouchableOpacity>
+
+        {isOwner && (
+          <>
+            <TouchableOpacity
+              onPress={() => navigation.navigate("UpdateSlots", { storeId })}
+              activeOpacity={0.7}
+              className={`w-14 h-14 rounded-2xl items-center justify-center border mr-3 bg-indigo-650 border-indigo-700 shadow-md shadow-indigo-600/20`}
+              style={{ backgroundColor: '#4f46e5' }}
+            >
+              <MaterialCommunityIcons name="calendar-clock" size={24} color="#fff" />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => navigation.navigate("StoreRecords", { storeId })}
+              activeOpacity={0.7}
+              className={`w-14 h-14 rounded-2xl items-center justify-center border mr-3 bg-emerald-500 border-emerald-600 shadow-md shadow-emerald-500/20`}
+            >
+              <MaterialCommunityIcons name="file-document-outline" size={24} color="#fff" />
+            </TouchableOpacity>
+          </>
+        )}
 
         <TouchableOpacity
           onPress={handleBookNow}
-          activeOpacity={0.9}
-          className="flex-1 h-14 rounded-2xl overflow-hidden shadow-2xl shadow-blue-500/40"
+          activeOpacity={0.8}
+          className="flex-1 h-14 rounded-2xl overflow-hidden shadow-lg shadow-blue-500/30"
         >
           <LinearGradient
             colors={isOwner ? (selectedTimeSlot ? ['#f59e0b', '#d97706'] : ['#10b981', '#059669']) : ['#1e40af', '#3b82f6']}
@@ -355,22 +444,13 @@ const StorePage = () => {
             end={{ x: 1, y: 0 }}
             className="flex-1 items-center justify-center flex-row px-4"
           >
-            <Text className="text-white font-black text-lg mr-3 tracking-widest text-center">
-              {isOwner ? (selectedTimeSlot ? 'MANAGE QUEUE' : 'MANAGE SHOP') : 'BOOK INSTANTLY'}
+            <Text className="text-white font-black text-sm mr-2 tracking-widest text-center">
+              {isOwner ? (selectedTimeSlot ? 'MANAGE QUEUE' : 'MANAGE SHOP') : 'BOOK APPOINTMENT'}
             </Text>
-            <MaterialCommunityIcons name={isOwner ? (selectedTimeSlot ? "account-group" : "cog") : "calendar-check"} size={24} color="#fff" />
+            <MaterialCommunityIcons name={isOwner ? (selectedTimeSlot ? "account-group" : "cog") : "calendar-check"} size={18} color="#fff" />
           </LinearGradient>
         </TouchableOpacity>
       </View>
-
-      {isOwner && (
-        <TouchableOpacity
-          onPress={() => navigation.navigate("StoreRecords", { storeId })}
-          className="absolute bottom-28 right-5 bg-emerald-500 rounded-2xl w-14 h-14 items-center justify-center shadow-lg shadow-emerald-500/40"
-        >
-          <MaterialCommunityIcons name="file-document-outline" size={24} color="#fff" />
-        </TouchableOpacity>
-      )}
 
       {/* Modern Contact Modal */}
       <Modal
@@ -384,13 +464,13 @@ const StorePage = () => {
           onPress={() => setContactModalVisible(false)}
           className="flex-1 bg-black/60 justify-end"
         >
-          <View className="bg-white rounded-t-[50px] p-10 shadow-2xl">
-            <View className="w-12 h-1 bg-slate-200 rounded-full self-center mb-10" />
-            <Text className="text-slate-900 font-black text-3xl mb-2">Get in Touch</Text>
+          <View className={`rounded-t-[50px] p-10 shadow-2xl ${isDark ? 'bg-[#070b16]' : 'bg-white'}`}>
+            <View className={`w-12 h-1 rounded-full self-center mb-10 ${isDark ? 'bg-slate-800' : 'bg-slate-200'}`} />
+            <Text className={`font-black text-3xl mb-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>Get in Touch</Text>
             <Text className="text-slate-400 mb-10 font-bold uppercase tracking-widest text-xs">Reach out to the store owner</Text>
             
-            <ContactRow icon="map-marker-radius-outline" label="Location" value={storeDetails.location} color="#ef4444" />
-            <ContactRow icon="phone-in-talk-outline" label="Contact Number" value={storeDetails.phoneNumber} color="#3b82f6" />
+            <ContactRow icon="map-marker-radius-outline" label="Location" value={storeDetails.location} color="#ef4444" isDark={isDark} />
+            <ContactRow icon="phone-in-talk-outline" label="Contact Number" value={storeDetails.phoneNumber} color="#3b82f6" isDark={isDark} />
             
             <TouchableOpacity
                className="bg-emerald-500 py-5 rounded-[24px] mt-6 items-center flex-row justify-center shadow-xl shadow-emerald-500/20"
@@ -416,9 +496,11 @@ const StorePage = () => {
       <CustomAlert 
         visible={alertVisible}
         onClose={() => setAlertVisible(false)}
+        onConfirm={alertConfig.onConfirm}
         title={alertConfig.title}
         message={alertConfig.message}
         type={alertConfig.type}
+        cancelText={alertConfig.cancelText}
       />
 
       <RNModal
@@ -430,30 +512,47 @@ const StorePage = () => {
         <TouchableOpacity 
           activeOpacity={1} 
           onPress={() => setQrModalVisible(false)}
-          className="flex-1 bg-black/60 justify-center items-center px-6"
+          className="flex-1 bg-black/80 justify-center items-center px-6"
         >
           <Animatable.View 
             animation="zoomIn" 
-            className="bg-white p-6 rounded-3xl items-center w-full max-w-sm"
+            className={`p-0 rounded-[48px] items-center w-full max-w-sm overflow-hidden ${
+              isDark ? 'bg-slate-900 border border-slate-800' : 'bg-white'
+            }`}
           >
-            <Text className="text-slate-800 font-black text-xl mb-2 text-center">{storeDetails.name}</Text>
-            <Text className="text-slate-400 font-bold text-[10px] uppercase tracking-widest mb-8">Store QR Code</Text>
-            
-            <View className="p-6 bg-slate-50 rounded-3xl border border-slate-100 mb-8">
-              <QRCode
-                value={storeDetails._id}
-                size={220}
-                color="#1e293b"
-                backgroundColor="#f8fafc"
-              />
+            <View className="p-8 items-center w-full">
+              <LinearGradient
+                colors={['#1e40af', '#3b82f6']}
+                className="w-16 h-16 rounded-2xl items-center justify-center mb-4 shadow-lg"
+              >
+                 <MaterialCommunityIcons name="qrcode-scan" size={32} color="#fff" />
+              </LinearGradient>
+              
+              <Text className={`font-black text-xl mb-1 text-center ${isDark ? 'text-white' : 'text-slate-900'}`}>{storeDetails.name}</Text>
+              <Text className="text-blue-500 font-black text-[9px] uppercase tracking-[3px] mb-6 text-center italic">झटपट बुकिंग • आरामSe</Text>
+              
+              <View className="p-5 bg-white rounded-3xl border border-slate-100 shadow-sm mb-4">
+                <QRCode
+                  value={storeDetails._id}
+                  size={200}
+                  color="#1e293b"
+                  backgroundColor="#ffffff"
+                />
+              </View>
+
+              <Text className={`font-bold text-[9px] text-center ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Scan to book your slot instantly</Text>
             </View>
 
-            <TouchableOpacity 
-              onPress={() => setQrModalVisible(false)}
-              className="bg-blue-600 w-full py-4 rounded-2xl items-center shadow-lg shadow-blue-500/20"
-            >
-              <Text className="text-white font-black uppercase tracking-widest">Done</Text>
-            </TouchableOpacity>
+            <View className={`p-6 w-full border-t ${
+              isDark ? 'bg-slate-950 border-slate-850' : 'bg-slate-55 border-slate-100'
+            }`}>
+              <TouchableOpacity 
+                onPress={() => setQrModalVisible(false)}
+                className="bg-blue-600 w-full py-4 rounded-2xl items-center shadow-lg shadow-blue-500/20"
+              >
+                <Text className="text-white font-black uppercase tracking-widest text-xs">Close QR</Text>
+              </TouchableOpacity>
+            </View>
           </Animatable.View>
         </TouchableOpacity>
       </RNModal>
@@ -461,24 +560,26 @@ const StorePage = () => {
   );
 };
 
-const StatItem = ({ icon, label, value, color }) => (
-  <View className="items-center px-2">
+const StatItem = ({ icon, label, value, color, isDark }) => (
+  <View className="items-center px-2 flex-1">
     <View style={{ backgroundColor: color + '15' }} className="p-3 rounded-2xl mb-2">
       <MaterialCommunityIcons name={icon} size={24} color={color} />
     </View>
-    <Text className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1">{label}</Text>
-    <Text className="text-slate-800 font-black text-xs" numberOfLines={1}>{value}</Text>
+    <Text className={`text-[10px] font-black uppercase tracking-widest mb-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{label}</Text>
+    <Text className={`font-black text-xs ${isDark ? 'text-white' : 'text-slate-800'}`} numberOfLines={1}>{value}</Text>
   </View>
 );
 
-const ContactRow = ({ icon, label, value, color }) => (
-  <View className="flex-row items-center mb-6 bg-slate-50 p-5 rounded-[24px] border border-slate-100">
+const ContactRow = ({ icon, label, value, color, isDark }) => (
+  <View className={`flex-row items-center mb-6 p-5 rounded-[24px] border ${
+    isDark ? 'bg-white/5 border-white/10' : 'bg-slate-50 border-slate-100'
+  }`}>
     <View style={{ backgroundColor: color + '10' }} className="p-3 rounded-2xl">
        <MaterialCommunityIcons name={icon} size={24} color={color} />
     </View>
     <View className="ml-5 flex-1">
        <Text className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1">{label}</Text>
-       <Text className="text-slate-900 font-black text-base" numberOfLines={2}>{value}</Text>
+       <Text className={`font-black text-base ${isDark ? 'text-white' : 'text-slate-900'}`} numberOfLines={2}>{value}</Text>
     </View>
   </View>
 );

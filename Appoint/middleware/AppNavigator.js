@@ -19,6 +19,7 @@ import EditProfile from '../screens/EditProfile';
 import SellerDashboard from '../screens/SellerDashboard';
 import SlotBookings from '../screens/SlotBookings';
 import StoreRecords from '../screens/StoreRecords';
+import UpdateSlots from '../screens/UpdateSlots';
 
 const Stack = createStackNavigator();
 
@@ -50,6 +51,7 @@ const AppNavigator = () => {
           <Stack.Screen name="SellerDashboard" component={SellerDashboard} />
           <Stack.Screen name="SlotBookings" component={SlotBookings} />
           <Stack.Screen name="StoreRecords" component={StoreRecords} />
+          <Stack.Screen name="UpdateSlots" component={UpdateSlots} />
         </>
       )}
     </Stack.Navigator>

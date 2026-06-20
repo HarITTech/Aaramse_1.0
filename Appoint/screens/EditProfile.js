@@ -22,20 +22,21 @@ import { API_BASE_URL } from "../config/api";
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Animatable from 'react-native-animatable';
 import CustomAlert from '../components/CustomAlert';
+import { useTheme } from '../middleware/ThemeContext';
 
 // Moved InputField outside to prevent re-creation and keyboard flickering
-const InputField = ({ icon, label, value, onChangeText, keyboardType = "default" }) => (
+const InputField = ({ icon, label, value, onChangeText, keyboardType = "default", isDark }) => (
   <View className="mb-6">
-    <Text className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-2 ml-4">{label}</Text>
-    <View className="flex-row items-center bg-white rounded-3xl px-4 h-16 border border-gray-100 shadow-sm">
+    <Text className={`text-xs font-bold uppercase tracking-widest mb-2 ml-4 ${isDark ? 'text-slate-400' : 'text-gray-400'}`}>{label}</Text>
+    <View className={`flex-row items-center border rounded-3xl px-4 h-16 shadow-sm ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-100'}`}>
       <MaterialCommunityIcons name={icon} size={22} color="#3b82f6" />
       <TextInput
-        className="flex-1 text-gray-800 font-semibold ml-3 h-full"
+        className={`flex-1 font-semibold ml-3 h-full ${isDark ? 'text-slate-100' : 'text-gray-800'}`}
         value={value}
         onChangeText={onChangeText}
         keyboardType={keyboardType}
         placeholder={`Enter your ${label.toLowerCase()}`}
-        placeholderTextColor="#cbd5e1"
+        placeholderTextColor={isDark ? '#475569' : '#cbd5e1'}
         style={{ paddingVertical: Platform.OS === 'android' ? 0 : 10 }}
       />
     </View>
@@ -44,6 +45,10 @@ const InputField = ({ icon, label, value, onChangeText, keyboardType = "default"
 
 const EditProfile = () => {
   const navigation = useNavigation();
+  const { theme } = useTheme();
+  
+  const isDark = theme === 'dark';
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [userId, setUserId] = useState(null);
@@ -142,15 +147,15 @@ const EditProfile = () => {
 
   if (loading) {
     return (
-      <View className="flex-1 justify-center items-center bg-gray-50">
+      <View className={`flex-1 justify-center items-center ${isDark ? 'bg-[#020617]' : 'bg-gray-50'}`}>
         <ActivityIndicator size="large" color="#1e40af" />
       </View>
     );
   }
 
   return (
-    <View className="flex-1 bg-gray-50">
-      <StatusBar barStyle="dark-content" />
+    <View className={`flex-1 ${isDark ? 'bg-[#020617]' : 'bg-gray-50'}`}>
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
       {isOffline && (
         <Animatable.View animation="slideInDown" className="bg-red-500 py-1.5 items-center flex-row justify-center z-50">
           <MaterialCommunityIcons name="wifi-off" size={14} color="white" />
@@ -165,20 +170,22 @@ const EditProfile = () => {
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 24 }}>
             <Animatable.View animation="fadeInLeft" duration={800}>
               <TouchableOpacity onPress={() => navigation.goBack()} className="mb-6">
-                <MaterialCommunityIcons name="arrow-left" size={28} color="#1e293b" />
+                <MaterialCommunityIcons name="arrow-left" size={28} color={isDark ? "#fff" : "#1e293b"} />
               </TouchableOpacity>
-              <Text className="text-3xl font-black text-slate-800 mb-2 underline decoration-blue-500">Edit Profile</Text>
-              <Text className="text-slate-400 font-medium mb-10">Keep your information up to date.</Text>
+              <Text className={`text-3xl font-black mb-2 underline decoration-blue-500 ${isDark ? 'text-white' : 'text-slate-800'}`}>Edit Profile</Text>
+              <Text className={`font-medium mb-10 ${isDark ? 'text-slate-400' : 'text-slate-400'}`}>Keep your information up to date.</Text>
             </Animatable.View>
 
             <Animatable.View animation="fadeInUp" delay={200}>
               <InputField 
+                isDark={isDark}
                 icon="account-outline" 
                 label="Full Name" 
                 value={formData.name} 
                 onChangeText={(t) => setFormData({...formData, name: t})} 
               />
               <InputField 
+                isDark={isDark}
                 icon="email-outline" 
                 label="Email Address" 
                 value={formData.email} 
@@ -186,6 +193,7 @@ const EditProfile = () => {
                 keyboardType="email-address"
               />
               <InputField 
+                isDark={isDark}
                 icon="phone-outline" 
                 label="Phone Number" 
                 value={formData.phone} 
@@ -193,6 +201,7 @@ const EditProfile = () => {
                 keyboardType="phone-pad"
               />
               <InputField 
+                isDark={isDark}
                 icon="map-marker-outline" 
                 label="Address" 
                 value={formData.address} 

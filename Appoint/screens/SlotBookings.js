@@ -20,11 +20,15 @@ import { API_BASE_URL } from "../config/api";
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Animatable from 'react-native-animatable';
 import CustomAlert from "../components/CustomAlert";
+import { useTheme } from '../middleware/ThemeContext';
 
 const SlotBookings = () => {
   const route = useRoute();
   const navigation = useNavigation();
+  const { theme } = useTheme();
   const { storeId, slotId, slotTime } = route.params;
+
+  const isDark = theme === 'dark';
   
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -105,26 +109,28 @@ const SlotBookings = () => {
 
   if (loading) {
     return (
-      <View className="flex-1 justify-center items-center bg-slate-50">
+      <View className={`flex-1 justify-center items-center ${isDark ? 'bg-[#020617]' : 'bg-slate-50'}`}>
         <ActivityIndicator size="large" color="#3b82f6" />
       </View>
     );
   }
 
   return (
-    <View className="flex-1 bg-slate-50">
-      <StatusBar barStyle="dark-content" />
+    <View className={`flex-1 ${isDark ? 'bg-[#020617]' : 'bg-slate-50'}`}>
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
       <SafeAreaView className="flex-1">
         <View className="px-6 pt-4 pb-2">
             <View className="flex-row items-center mb-5">
                 <TouchableOpacity 
                   onPress={() => navigation.goBack()}
-                  className="w-10 h-10 bg-white items-center justify-center rounded-xl shadow-sm border border-slate-100 mr-4"
+                  className={`w-10 h-10 items-center justify-center rounded-xl shadow-sm border mr-4 ${
+                    isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'
+                  }`}
                 >
-                  <MaterialCommunityIcons name="chevron-left" size={24} color="#1e293b" />
+                  <MaterialCommunityIcons name="chevron-left" size={24} color={isDark ? '#fff' : '#1e293b'} />
                 </TouchableOpacity>
                 <View className="flex-1">
-                   <Text className="text-xl font-black text-slate-800">Slot Queue</Text>
+                   <Text className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-800'}`}>Slot Queue</Text>
                    <Text className="text-blue-500 font-bold text-[10px] uppercase tracking-widest">{slotTime}</Text>
                 </View>
             </View>
@@ -137,10 +143,12 @@ const SlotBookings = () => {
         >
           {bookings.length === 0 ? (
             <Animatable.View animation="fadeInUp" className="items-center justify-center mt-20">
-              <View className="bg-white p-10 rounded-[48px] items-center border border-slate-100 shadow-sm w-full">
-                <MaterialCommunityIcons name="account-group-outline" size={80} color="#e2e8f0" />
-                <Text className="text-slate-800 text-xl font-black mt-6">No bookings yet</Text>
-                <Text className="text-slate-400 text-center font-medium mt-2">There are currently no users in the queue for this specific slot.</Text>
+              <View className={`p-10 rounded-[48px] items-center border shadow-sm w-full ${
+                isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'
+              }`}>
+                <MaterialCommunityIcons name="account-group-outline" size={80} color={isDark ? "#1e293b" : "#e2e8f0"} />
+                <Text className={`text-xl font-black mt-6 ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>No bookings yet</Text>
+                <Text className={`text-center font-medium mt-2 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>There are currently no users in the queue for this specific slot.</Text>
               </View>
             </Animatable.View>
           ) : (
@@ -149,48 +157,54 @@ const SlotBookings = () => {
                 key={booking._id}
                 animation="fadeInUp"
                 delay={index * 100}
-                className="bg-white rounded-[32px] p-6 mb-6 shadow-sm border border-slate-100"
+                className={`rounded-[32px] p-6 mb-6 border ${
+                  isDark ? 'bg-slate-900 border-slate-800 shadow-none' : 'bg-white border-slate-100 shadow-sm'
+                }`}
               >
                 <View className="flex-row items-center mb-4">
-                  <View className="w-12 h-12 bg-blue-50 rounded-xl items-center justify-center mr-3">
+                  <View className={`w-12 h-12 rounded-xl items-center justify-center mr-3 ${isDark ? 'bg-blue-500/10' : 'bg-blue-50'}`}>
                      <Text className="text-blue-600 font-black text-base">#{index + 1}</Text>
                   </View>
                   <View className="flex-1">
-                    <Text className="text-slate-900 font-black text-base">{booking.name}</Text>
+                    <Text className={`font-black text-base ${isDark ? 'text-slate-150' : 'text-slate-900'}`}>{booking.name}</Text>
                     <View className="flex-row items-center">
-                       <MaterialCommunityIcons name="phone-outline" size={10} color="#94a3b8" />
-                       <Text className="text-slate-400 font-bold text-[10px] ml-1">{booking.phoneNumber}</Text>
+                       <MaterialCommunityIcons name="phone-outline" size={10} color={isDark ? "#475569" : "#94a3b8"} />
+                       <Text className={`font-bold text-[10px] ml-1 ${isDark ? 'text-slate-450' : 'text-slate-400'}`}>{booking.phoneNumber}</Text>
                     </View>
                   </View>
                   {processingId === booking._id ? (
                     <ActivityIndicator color="#3b82f6" />
                   ) : (
-                    <View className="bg-blue-50 px-3 py-1.5 rounded-xl">
+                    <View className={`px-3 py-1.5 rounded-xl ${isDark ? 'bg-blue-500/10' : 'bg-blue-50'}`}>
                       <Text className="text-blue-600 font-black text-[10px] uppercase tracking-widest">In Waiting</Text>
                     </View>
                   )}
                 </View>
 
-                <View className="bg-slate-50 p-4 rounded-2xl mb-6">
+                <View className={`p-4 rounded-2xl mb-6 ${isDark ? 'bg-slate-950' : 'bg-slate-50'}`}>
                    <View className="flex-row items-start">
-                      <MaterialCommunityIcons name="map-marker-outline" size={16} color="#64748b" style={{ marginTop: 2 }} />
-                      <Text className="text-slate-600 font-medium text-xs ml-2 flex-1">{booking.address}</Text>
+                      <MaterialCommunityIcons name="map-marker-outline" size={16} color={isDark ? "#475569" : "#64748b"} style={{ marginTop: 2 }} />
+                      <Text className={`font-medium text-xs ml-2 flex-1 ${isDark ? 'text-slate-350' : 'text-slate-600'}`}>{booking.address}</Text>
                    </View>
                 </View>
 
-                <View className="flex-row space-x-3">
+                <View className="flex-row justify-between">
                    <TouchableOpacity 
                      onPress={() => handleUpdateStatus(booking._id, 'Canceled')}
-                     className="flex-1 bg-red-50 py-4 rounded-xl items-center flex-row justify-center border border-red-100"
+                     style={{ width: '48%' }}
+                     className={`py-3.5 rounded-2xl items-center flex-row justify-center border ${
+                       isDark ? 'bg-red-500/10 border-red-500/20' : 'bg-red-50 border-red-100'
+                     }`}
                    >
-                     <MaterialCommunityIcons name="close-circle-outline" size={18} color="#ef4444" />
+                     <MaterialCommunityIcons name="close-circle-outline" size={16} color="#ef4444" />
                      <Text className="text-red-500 font-black ml-2 uppercase text-[10px] tracking-widest">Cancel</Text>
                    </TouchableOpacity>
                    <TouchableOpacity 
                      onPress={() => handleUpdateStatus(booking._id, 'Completed')}
-                     className="flex-1 bg-emerald-500 py-4 rounded-xl items-center flex-row justify-center shadow-lg shadow-emerald-500/20"
+                     style={{ width: '48%' }}
+                     className="bg-emerald-500 py-3.5 rounded-2xl items-center flex-row justify-center shadow-lg shadow-emerald-500/20"
                    >
-                     <MaterialCommunityIcons name="check-circle-outline" size={18} color="#fff" />
+                     <MaterialCommunityIcons name="check-circle-outline" size={16} color="#fff" />
                      <Text className="text-white font-black ml-2 uppercase text-[10px] tracking-widest">Complete</Text>
                    </TouchableOpacity>
                 </View>
