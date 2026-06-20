@@ -7,7 +7,6 @@ import {
   Modal,
   ActivityIndicator,
   Keyboard,
-  Platform,
 } from 'react-native';
 import * as Animatable from 'react-native-animatable';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -25,22 +24,25 @@ const OtpModal = ({ visible, email, onVerified, onClose }) => {
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [sending, setSending] = useState(false);
   const [verifying, setVerifying] = useState(false);
-  const [otpSent, setOtpSent] = useState(false);
+  // Show OTP input immediately after tapping Send (don't wait for server confirmation)
+  const [inputVisible, setInputVisible] = useState(false);
   const [countdown, setCountdown] = useState(0);
   const [errorMsg, setErrorMsg] = useState('');
-  const [successMsg, setSuccessMsg] = useState('');
+  const [infoMsg, setInfoMsg] = useState('');
 
   const inputRefs = useRef([]);
   const timerRef = useRef(null);
 
-  // Reset state when modal opens
+  // Reset state when modal opens/closes
   useEffect(() => {
     if (visible) {
       setOtp(['', '', '', '', '', '']);
-      setOtpSent(false);
+      setInputVisible(false);
       setCountdown(0);
       setErrorMsg('');
-      setSuccessMsg('');
+      setInfoMsg('');
+      setSending(false);
+      setVerifying(false);
     }
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
@@ -48,6 +50,7 @@ const OtpModal = ({ visible, email, onVerified, onClose }) => {
   }, [visible]);
 
   const startCountdown = useCallback(() => {
+    if (timerRef.current) clearInterval(timerRef.current);
     setCountdown(RESEND_COOLDOWN);
     timerRef.current = setInterval(() => {
       setCountdown(prev => {
@@ -63,18 +66,38 @@ const OtpModal = ({ visible, email, onVerified, onClose }) => {
   const handleSendOtp = async () => {
     if (!email) return;
     setErrorMsg('');
-    setSuccessMsg('');
+    setInfoMsg('');
     setSending(true);
+
+    // ✅ KEY FIX: Show OTP input boxes immediately on tap, don't wait for server
+    setInputVisible(true);
+    setInfoMsg('Sending OTP... please wait a moment.');
+    startCountdown();
+    // Auto-focus first box after a short delay
+    setTimeout(() => inputRefs.current[0]?.focus(), 500);
+
     try {
-      await axios.post(`${API_BASE_URL}/api/otp/send`, { email });
-      setOtpSent(true);
-      setSuccessMsg('OTP sent! Check your inbox.');
-      startCountdown();
-      // Focus first OTP box
-      setTimeout(() => inputRefs.current[0]?.focus(), 400);
+      // 90 second timeout to handle Render cold start
+      await axios.post(
+        `${API_BASE_URL}/api/otp/send`,
+        { email },
+        { timeout: 90000 }
+      );
+      setInfoMsg('✅ OTP sent! Check your inbox and enter below.');
     } catch (err) {
-      const msg = err?.response?.data?.msg || 'Failed to send OTP. Try again.';
-      setErrorMsg(msg);
+      const status = err?.response?.status;
+      const msg = err?.response?.data?.msg;
+
+      if (status === 429) {
+        // Rate limit — OTP was previously sent, boxes should still be visible
+        setInfoMsg('OTP already sent. Check your inbox or wait to resend.');
+      } else if (err.code === 'ECONNABORTED' || !err.response) {
+        // Timeout or network error — server likely sent the email anyway
+        setInfoMsg('⚠️ Request timed out, but OTP may have been sent. Check your inbox and enter below.');
+      } else {
+        setErrorMsg(msg || 'Failed to send OTP. Tap Resend to try again.');
+        setInputVisible(false);
+      }
     } finally {
       setSending(false);
     }
@@ -87,12 +110,12 @@ const OtpModal = ({ visible, email, onVerified, onClose }) => {
     setOtp(newOtp);
     setErrorMsg('');
 
-    // Auto-advance
+    // Auto-advance to next box
     if (digit && index < 5) {
       inputRefs.current[index + 1]?.focus();
     }
 
-    // Auto-verify when all 6 digits are filled
+    // Auto-verify when all 6 digits entered
     if (digit && index === 5) {
       const fullOtp = [...newOtp].join('');
       if (fullOtp.length === 6) {
@@ -117,8 +140,12 @@ const OtpModal = ({ visible, email, onVerified, onClose }) => {
     setErrorMsg('');
     setVerifying(true);
     try {
-      await axios.post(`${API_BASE_URL}/api/otp/verify`, { email, otp: code });
-      onVerified(); // parent will create the store
+      await axios.post(
+        `${API_BASE_URL}/api/otp/verify`,
+        { email, otp: code },
+        { timeout: 30000 }
+      );
+      onVerified();
     } catch (err) {
       const msg = err?.response?.data?.msg || 'Invalid OTP. Please try again.';
       setErrorMsg(msg);
@@ -135,9 +162,13 @@ const OtpModal = ({ visible, email, onVerified, onClose }) => {
 
   return (
     <Modal animationType="fade" transparent visible={visible} onRequestClose={onClose}>
-      <View
-        style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.75)', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 }}
-      >
+      <View style={{
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.75)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 24,
+      }}>
         <Animatable.View
           animation="zoomIn"
           duration={400}
@@ -157,40 +188,54 @@ const OtpModal = ({ visible, email, onVerified, onClose }) => {
             end={{ x: 1, y: 1 }}
             style={{ padding: 28, alignItems: 'center' }}
           >
-            <Animatable.View animation="bounceIn" delay={200} style={{
-              width: 64, height: 64,
-              backgroundColor: 'rgba(255,255,255,0.2)',
-              borderRadius: 32,
-              alignItems: 'center', justifyContent: 'center',
-              marginBottom: 12,
-            }}>
-              <MaterialCommunityIcons name="email-check-outline" size={32} color="#fff" />
+            <Animatable.View
+              animation="bounceIn"
+              delay={200}
+              style={{
+                width: 64, height: 64,
+                backgroundColor: 'rgba(255,255,255,0.2)',
+                borderRadius: 32,
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: 12,
+              }}
+            >
+              <MaterialCommunityIcons
+                name={inputVisible ? 'email-open-outline' : 'email-check-outline'}
+                size={32}
+                color="#fff"
+              />
             </Animatable.View>
             <Text style={{ color: '#fff', fontSize: 20, fontWeight: '900', letterSpacing: -0.5 }}>
               Verify Your Email
             </Text>
-            <Text style={{ color: 'rgba(255,255,255,0.75)', fontSize: 13, marginTop: 4, textAlign: 'center' }}>
+            <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 12, marginTop: 4, textAlign: 'center' }}>
               {email}
             </Text>
           </LinearGradient>
 
-          <View style={{ padding: 28 }}>
-            {/* Instruction */}
-            <Animatable.Text animation="fadeInUp" delay={200} style={{
+          <View style={{ padding: 24 }}>
+
+            {/* Step instruction */}
+            <Text style={{
               color: isDark ? '#94a3b8' : '#64748b',
-              fontSize: 14,
+              fontSize: 13,
               textAlign: 'center',
               lineHeight: 20,
-              marginBottom: 28,
+              marginBottom: 20,
             }}>
-              {otpSent
-                ? 'Enter the 6-digit code we sent to your email.'
-                : 'Click "Send OTP" to receive a verification code on your email.'}
-            </Animatable.Text>
+              {!inputVisible
+                ? 'Tap "Send OTP" to receive a verification code on your email.'
+                : 'Enter the 6-digit code sent to your email.'}
+            </Text>
 
-            {/* OTP 6-box Input */}
-            {otpSent && (
-              <Animatable.View animation="fadeInUp" delay={100} style={{ flexDirection: 'row', justifyContent: 'center', marginBottom: 28, gap: 10 }}>
+            {/* ── OTP 6-box input (shown immediately after tapping Send) ── */}
+            {inputVisible && (
+              <Animatable.View
+                animation="fadeInDown"
+                duration={300}
+                style={{ flexDirection: 'row', justifyContent: 'center', marginBottom: 20, gap: 8 }}
+              >
                 {otp.map((digit, index) => (
                   <TextInput
                     key={index}
@@ -201,14 +246,13 @@ const OtpModal = ({ visible, email, onVerified, onClose }) => {
                     keyboardType="number-pad"
                     maxLength={1}
                     selectTextOnFocus
+                    editable={!verifying}
                     style={{
                       width: 44,
                       height: 54,
                       borderRadius: 14,
                       borderWidth: 2,
-                      borderColor: digit
-                        ? '#3b82f6'
-                        : isDark ? '#1e293b' : '#e2e8f0',
+                      borderColor: digit ? '#3b82f6' : (isDark ? '#1e293b' : '#e2e8f0'),
                       backgroundColor: digit
                         ? (isDark ? '#1e3a5f' : '#eff6ff')
                         : (isDark ? '#0f172a' : '#f8fafc'),
@@ -222,57 +266,73 @@ const OtpModal = ({ visible, email, onVerified, onClose }) => {
               </Animatable.View>
             )}
 
-            {/* Messages */}
-            {successMsg && !errorMsg ? (
-              <Animatable.View animation="fadeIn" style={{
-                flexDirection: 'row', alignItems: 'center',
-                backgroundColor: isDark ? '#052e16' : '#f0fdf4',
-                borderRadius: 12, padding: 12, marginBottom: 20,
+            {/* Info message */}
+            {infoMsg ? (
+              <View style={{
+                flexDirection: 'row', alignItems: 'flex-start',
+                backgroundColor: isDark ? '#0c1a3a' : '#eff6ff',
+                borderRadius: 12, padding: 12, marginBottom: 16,
+                borderLeftWidth: 3, borderLeftColor: '#3b82f6',
               }}>
-                <MaterialCommunityIcons name="check-circle-outline" size={18} color="#10b981" />
-                <Text style={{ color: '#10b981', fontSize: 13, fontWeight: '600', marginLeft: 8 }}>{successMsg}</Text>
-              </Animatable.View>
+                {sending
+                  ? <ActivityIndicator size={16} color="#3b82f6" style={{ marginRight: 8, marginTop: 1 }} />
+                  : <MaterialCommunityIcons name="information-outline" size={16} color="#3b82f6" style={{ marginRight: 8, marginTop: 1 }} />
+                }
+                <Text style={{ color: isDark ? '#93c5fd' : '#1e40af', fontSize: 12, fontWeight: '600', flex: 1, lineHeight: 18 }}>
+                  {infoMsg}
+                </Text>
+              </View>
             ) : null}
 
+            {/* Error message */}
             {errorMsg ? (
-              <Animatable.View animation="shakeX" style={{
-                flexDirection: 'row', alignItems: 'center',
-                backgroundColor: isDark ? '#450a0a' : '#fef2f2',
-                borderRadius: 12, padding: 12, marginBottom: 20,
-              }}>
+              <Animatable.View
+                animation="shake"
+                style={{
+                  flexDirection: 'row', alignItems: 'center',
+                  backgroundColor: isDark ? '#450a0a' : '#fef2f2',
+                  borderRadius: 12, padding: 12, marginBottom: 16,
+                }}
+              >
                 <MaterialCommunityIcons name="alert-circle-outline" size={18} color="#ef4444" />
-                <Text style={{ color: '#ef4444', fontSize: 13, fontWeight: '600', marginLeft: 8, flex: 1 }}>{errorMsg}</Text>
+                <Text style={{ color: '#ef4444', fontSize: 13, fontWeight: '600', marginLeft: 8, flex: 1 }}>
+                  {errorMsg}
+                </Text>
               </Animatable.View>
             ) : null}
 
-            {/* Send / Resend OTP Button */}
-            {!otpSent ? (
+            {/* ── SEND OTP button (shown before first send) ── */}
+            {!inputVisible && (
               <TouchableOpacity
                 onPress={handleSendOtp}
                 disabled={sending}
-                style={{ borderRadius: 18, overflow: 'hidden', marginBottom: 16 }}
+                style={{ borderRadius: 18, overflow: 'hidden', marginBottom: 12 }}
               >
                 <LinearGradient
                   colors={['#1e40af', '#3b82f6']}
                   start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
                   style={{ paddingVertical: 18, alignItems: 'center', justifyContent: 'center', flexDirection: 'row' }}
                 >
-                  {sending
-                    ? <ActivityIndicator color="#fff" />
-                    : <>
-                        <MaterialCommunityIcons name="send" size={18} color="#fff" style={{ marginRight: 8 }} />
-                        <Text style={{ color: '#fff', fontWeight: '900', fontSize: 15, letterSpacing: 1 }}>Send OTP</Text>
-                      </>
-                  }
+                  <MaterialCommunityIcons name="send" size={18} color="#fff" style={{ marginRight: 8 }} />
+                  <Text style={{ color: '#fff', fontWeight: '900', fontSize: 15, letterSpacing: 1 }}>
+                    Send OTP
+                  </Text>
                 </LinearGradient>
               </TouchableOpacity>
-            ) : (
+            )}
+
+            {/* ── VERIFY button (shown after OTP boxes appear) ── */}
+            {inputVisible && (
               <>
-                {/* Verify Button */}
                 <TouchableOpacity
                   onPress={() => handleVerifyOtp()}
                   disabled={verifying || !allFilled}
-                  style={{ borderRadius: 18, overflow: 'hidden', marginBottom: 16, opacity: allFilled ? 1 : 0.5 }}
+                  style={{
+                    borderRadius: 18,
+                    overflow: 'hidden',
+                    marginBottom: 12,
+                    opacity: allFilled ? 1 : 0.45,
+                  }}
                 >
                   <LinearGradient
                     colors={['#059669', '#10b981']}
@@ -295,11 +355,12 @@ const OtpModal = ({ visible, email, onVerified, onClose }) => {
                 <TouchableOpacity
                   onPress={handleSendOtp}
                   disabled={countdown > 0 || sending}
-                  style={{ alignItems: 'center', paddingVertical: 10, marginBottom: 4 }}
+                  style={{ alignItems: 'center', paddingVertical: 10, marginBottom: 8 }}
                 >
                   {countdown > 0 ? (
                     <Text style={{ color: isDark ? '#475569' : '#94a3b8', fontSize: 13 }}>
-                      Resend OTP in <Text style={{ color: '#3b82f6', fontWeight: '800' }}>{countdown}s</Text>
+                      Resend in{' '}
+                      <Text style={{ color: '#3b82f6', fontWeight: '800' }}>{countdown}s</Text>
                     </Text>
                   ) : (
                     <Text style={{ color: '#3b82f6', fontSize: 13, fontWeight: '700' }}>
@@ -314,9 +375,10 @@ const OtpModal = ({ visible, email, onVerified, onClose }) => {
             <TouchableOpacity
               onPress={onClose}
               style={{
-                alignItems: 'center', paddingVertical: 14,
+                alignItems: 'center',
+                paddingVertical: 14,
                 backgroundColor: isDark ? '#1e293b' : '#f1f5f9',
-                borderRadius: 18, marginTop: 4,
+                borderRadius: 18,
               }}
             >
               <Text style={{ color: isDark ? '#64748b' : '#94a3b8', fontWeight: '700', fontSize: 13 }}>
