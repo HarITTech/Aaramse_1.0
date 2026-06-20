@@ -1,0 +1,24 @@
+name: Keep Render Server Alive
+
+on:
+  schedule:
+    # Runs every 14 minutes — Render free tier spins down after 15 min of inactivity
+    - cron: '*/14 * * * *'
+  workflow_dispatch: # Allow manual trigger from GitHub Actions tab
+
+jobs:
+  ping:
+    name: Ping Render Server
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Ping /ping endpoint
+        run: |
+          echo "🏓 Pinging Render server at $(date)"
+          RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 60 https://aaramse-1-0.onrender.com/ping)
+          echo "Response code: $RESPONSE"
+          if [ "$RESPONSE" = "200" ]; then
+            echo "✅ Server is alive!"
+          else
+            echo "⚠️ Server returned: $RESPONSE (may be waking up)"
+          fi
