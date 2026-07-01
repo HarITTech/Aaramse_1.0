@@ -24,9 +24,11 @@ const createTransporter = () =>
       pass: process.env.EMAIL_PASS,
     },
     tls: {
-      rejectUnauthorized: false,  // allow self-signed certs in some environments
+      rejectUnauthorized: false,
     },
-    connectionTimeout: 15000,   // 15s connect timeout
+    // Force IPv4 — Render free tier blocks IPv6 outbound (ENETUNREACH)
+    family: 4,
+    connectionTimeout: 15000,
     greetingTimeout: 15000,
     socketTimeout: 20000,
   });

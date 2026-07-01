@@ -16,6 +16,8 @@ const createTransporter = () =>
     tls: {
       rejectUnauthorized: false,
     },
+    // Force IPv4 — Render free tier blocks IPv6 outbound (ENETUNREACH)
+    family: 4,
     connectionTimeout: 15000,
     greetingTimeout: 15000,
     socketTimeout: 20000,

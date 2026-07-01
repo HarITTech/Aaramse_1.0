@@ -5,6 +5,8 @@ dotenv.config();
 // Import dependencies using ES module syntax
 import dns from 'dns';
 dns.setServers(['8.8.8.8', '1.1.1.1']);
+// Force IPv4 — Render free tier blocks outbound IPv6 (causes ENETUNREACH on smtp.gmail.com)
+dns.setDefaultResultOrder('ipv4first');
 
 import express from 'express';
 import mongoose from 'mongoose';
