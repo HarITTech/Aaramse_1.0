@@ -4,6 +4,7 @@ import BookingHistory from '../models/BookingHistory.js';
 import Store from '../models/store.js';
 import User from '../models/User.js';
 import { Expo } from 'expo-server-sdk';
+import { sendBookingConfirmationEmail, sendAppointmentStatusEmail } from '../middleware/emailService.js';
 
 const expo = new Expo();
 
@@ -287,6 +288,34 @@ export const bookAppointment = async (req, res) => {
 
     // Return the updated store with detailed user information
     const updatedStore = await Store.findById(storeId).populate('bookedUsers.user', 'name email');
+
+    // ── Send booking confirmation email (non-blocking) ────────────────────────
+    try {
+      const bookedUser = await User.findById(req.user.id).select('email name');
+      if (bookedUser?.email) {
+        // Find the slot info for the email
+        const slotInfo = store.appointmentSlots.find(s =>
+          s.timeSlots.some(ts => ts._id.toString() === timeSlotId)
+        );
+        const tsInfo = slotInfo?.timeSlots.find(ts => ts._id.toString() === timeSlotId);
+
+        await sendBookingConfirmationEmail({
+          toEmail:       bookedUser.email,
+          userName:      name || bookedUser.name,
+          storeName:     store.name,
+          storeLocation: store.location,
+          storePhone:    store.phoneNumber,
+          slotDate:      slotInfo?.date,
+          startTime:     tsInfo?.startTime,
+          endTime:       tsInfo?.endTime,
+          queueNumber,
+        });
+      }
+    } catch (emailErr) {
+      // Non-critical — log but do not fail the booking response
+      console.error('[Email] Booking confirmation failed:', emailErr.message);
+    }
+
     res.json(updatedStore);
   } catch (err) {
     console.error(`Error booking appointment: ${err.message}`);
@@ -550,6 +579,22 @@ export const completeAppointment = async (req, res) => {
       } else if (status === 'Canceled') {
         await sendPushNotification(completedBooking.pushToken, 'Appointment Canceled', `Your appointment at ${store.name} was canceled.`);
       }
+    }
+
+    // ── Send appointment status email (non-blocking) ──────────────────────────
+    try {
+      const bookedUserDoc = await User.findById(completedBooking.user).select('email name');
+      if (bookedUserDoc?.email) {
+        await sendAppointmentStatusEmail({
+          toEmail:   bookedUserDoc.email,
+          userName:  completedBooking.name || bookedUserDoc.name,
+          storeName: store.name,
+          status,
+        });
+      }
+    } catch (emailErr) {
+      // Non-critical — log but do not fail the response
+      console.error('[Email] Status email failed:', emailErr.message);
     }
 
     // Notify others in line about the queue moving

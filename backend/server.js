@@ -1,3 +1,7 @@
+// ⚠️ dotenv MUST be loaded first — before any other imports read process.env
+import dotenv from 'dotenv';
+dotenv.config();
+
 // Import dependencies using ES module syntax
 import dns from 'dns';
 dns.setServers(['8.8.8.8', '1.1.1.1']);
@@ -6,7 +10,6 @@ import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
 import bodyParser from 'body-parser';
-import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
 import authRoutes from './routes/auth.route.js';
 import storeRoutes from './routes/store.route.js';
@@ -18,9 +21,6 @@ const uploadDir = './uploads';
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir);
 }
-
-// Initialize dotenv to load environment variables
-dotenv.config();
 
 const app = express();
 const allowedOrigins = [
