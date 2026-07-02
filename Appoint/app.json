@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Aaramse",
-    "slug": "Aaramse",
+    "slug": "aaramse",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -12,7 +12,11 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.mahesh140.Aaramse",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -27,8 +31,9 @@
     },
     "extra": {
       "eas": {
-        "projectId": "7d2bb5b1-fc67-46a0-87a3-e49248660333"
+        "projectId": "4d0bb4f6-7d19-4255-be3e-9e9ffed8ad33"
       }
-    }
+    },
+    "owner": "harittechsolutions-team"
   }
 }

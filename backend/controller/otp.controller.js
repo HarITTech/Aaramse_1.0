@@ -1,4 +1,6 @@
 import nodemailer from 'nodemailer';
+import dns from 'dns';
+import { promisify } from 'util';
 
 /**
  * OTP Controller — Nodemailer with Gmail SMTP on port 587 (STARTTLS).
@@ -13,10 +15,21 @@ const OTP_EXPIRY_MS  = 10 * 60 * 1000; // 10 minutes
 const MAX_ATTEMPTS   = 5;
 const RESEND_WAIT_S  = 60;             // seconds between resends
 
+const lookupPromise = promisify(dns.lookup);
+
 // ── Transporter — port 587 STARTTLS (more reliable than 465 on Render) ─────
-const createTransporter = () =>
-  nodemailer.createTransport({
-    host: 'smtp.gmail.com',
+const createTransporter = async () => {
+  let resolvedHost = 'smtp.gmail.com';
+  try {
+    const lookupResult = await lookupPromise('smtp.gmail.com', { family: 4 });
+    resolvedHost = lookupResult.address;
+    console.log(`[DNS] Resolved smtp.gmail.com to IPv4: ${resolvedHost}`);
+  } catch (err) {
+    console.error('[DNS] Failed to resolve smtp.gmail.com, falling back:', err.message);
+  }
+
+  return nodemailer.createTransport({
+    host: resolvedHost,
     port: 587,
     secure: false,          // STARTTLS (not SSL)
     auth: {
@@ -25,6 +38,7 @@ const createTransporter = () =>
     },
     tls: {
       rejectUnauthorized: false,
+      servername: 'smtp.gmail.com',
     },
     // Force IPv4 — Render free tier blocks IPv6 outbound (ENETUNREACH)
     family: 4,
@@ -32,6 +46,7 @@ const createTransporter = () =>
     greetingTimeout: 15000,
     socketTimeout: 20000,
   });
+};
 
 // ── Generate 6-digit OTP ──────────────────────────────────────────────────
 const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
@@ -128,7 +143,7 @@ export const sendOtp = async (req, res) => {
   }, OTP_EXPIRY_MS);
 
   try {
-    const transporter = createTransporter();
+    const transporter = await createTransporter();
     await transporter.sendMail({
       from: `"AaramSe" <${process.env.EMAIL_USER}>`,
       to: normalizedEmail,

@@ -15,12 +15,18 @@
       "autoIncrement": true,
       "android": {
         "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_BASE_URL": "https://aaramse-1-0-c07f.onrender.com"
       }
     },
     "production-aab": {
       "autoIncrement": true,
       "android": {
         "buildType": "app-bundle"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_BASE_URL": "https://aaramse-1-0-c07f.onrender.com"
       }
     }
   },

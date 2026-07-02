@@ -1,12 +1,25 @@
 import nodemailer from 'nodemailer';
 import dotenv from 'dotenv';
+import dns from 'dns';
+import { promisify } from 'util';
 
 dotenv.config();
 
+const lookupPromise = promisify(dns.lookup);
+
 // ── Transporter — Gmail SMTP port 587 STARTTLS ────────────────────────────────
-const createTransporter = () =>
-  nodemailer.createTransport({
-    host: 'smtp.gmail.com',
+const createTransporter = async () => {
+  let resolvedHost = 'smtp.gmail.com';
+  try {
+    const lookupResult = await lookupPromise('smtp.gmail.com', { family: 4 });
+    resolvedHost = lookupResult.address;
+    console.log(`[DNS] Resolved smtp.gmail.com to IPv4: ${resolvedHost}`);
+  } catch (err) {
+    console.error('[DNS] Failed to resolve smtp.gmail.com, falling back:', err.message);
+  }
+
+  return nodemailer.createTransport({
+    host: resolvedHost,
     port: 587,
     secure: false,          // STARTTLS (not SSL)
     auth: {
@@ -15,6 +28,7 @@ const createTransporter = () =>
     },
     tls: {
       rejectUnauthorized: false,
+      servername: 'smtp.gmail.com',
     },
     // Force IPv4 — Render free tier blocks IPv6 outbound (ENETUNREACH)
     family: 4,
@@ -22,11 +36,12 @@ const createTransporter = () =>
     greetingTimeout: 15000,
     socketTimeout: 20000,
   });
+};
 
 // ── Generic send function ─────────────────────────────────────────────────────
 export const sendEmail = async (mailOptions) => {
   try {
-    const transporter = createTransporter();
+    const transporter = await createTransporter();
     await transporter.sendMail(mailOptions);
     console.log(`[Email] Sent to ${mailOptions.to}`);
   } catch (error) {
