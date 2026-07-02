@@ -16,6 +16,7 @@ import cookieParser from 'cookie-parser';
 import authRoutes from './routes/auth.route.js';
 import storeRoutes from './routes/store.route.js';
 import otpRoutes from './routes/otp.route.js';
+import healthRoutes from './health/health.routes.js';
 import fs from 'fs';
 
 // Create uploads directory if it doesn't exist
@@ -50,6 +51,7 @@ mongoose.connect(process.env.MONGO_URI)
 app.use('/api/auth', authRoutes);
 app.use('/api/store', storeRoutes);
 app.use('/api/otp', otpRoutes);
+app.use('/api/health', healthRoutes);
 
 // Test Route
 app.get('/', (req, res) => {
