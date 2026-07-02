@@ -19,6 +19,7 @@ import axios from 'axios';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../middleware/ThemeContext';
 import { API_BASE_URL } from '../config/api';
+import OtpModal from '../components/OtpModal';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Animatable from 'react-native-animatable';
 import { MaterialCommunityIcons } from "@expo/vector-icons";
@@ -66,10 +67,32 @@ const RegisterScreen = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [otpModalVisible, setOtpModalVisible] = useState(false);
   const { theme } = useTheme();
   const navigation = useNavigation();
 
   const isDark = theme === 'dark';
+
+  const proceedRegistration = async () => {
+    setLoading(true);
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const isEmail = emailRegex.test(email);
+    
+    try {
+      const payload = {
+        name,
+        password,
+        ...(isEmail ? { email } : { phone: email })
+      };
+      await axios.post(`${API_BASE_URL}/api/auth/register`, payload);
+      Alert.alert('Success', 'Welcome! Please login to continue.');
+      navigation.navigate('Login');
+    } catch (error) {
+      Alert.alert('Error', error.response?.data?.msg || error.response?.data?.message || 'Registration failed');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleRegister = async () => {
     // Basic validations
@@ -94,20 +117,10 @@ const RegisterScreen = () => {
       return;
     }
 
-    setLoading(true);
-    try {
-      const payload = {
-        name,
-        password,
-        ...(isEmail ? { email } : { phone: email })
-      };
-      await axios.post(`${API_BASE_URL}/api/auth/register`, payload);
-      Alert.alert('Success', 'Welcome! Please login to continue.');
-      navigation.navigate('Login');
-    } catch (error) {
-      Alert.alert('Error', error.response?.data?.message || 'Registration failed');
-    } finally {
-      setLoading(false);
+    if (isEmail) {
+      setOtpModalVisible(true);
+    } else {
+      await proceedRegistration();
     }
   };
 
@@ -244,6 +257,17 @@ const RegisterScreen = () => {
           </KeyboardAvoidingView>
         </SafeAreaView>
       </LinearGradient>
+      
+      <OtpModal
+        visible={otpModalVisible}
+        email={email}
+        buttonText="Verify & Register"
+        onVerified={async () => {
+          setOtpModalVisible(false);
+          await proceedRegistration();
+        }}
+        onClose={() => setOtpModalVisible(false)}
+      />
     </ImageBackground>
   );
 };

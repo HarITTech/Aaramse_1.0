@@ -17,7 +17,7 @@ import { API_BASE_URL } from '../config/api';
 
 const RESEND_COOLDOWN = 60; // seconds
 
-const OtpModal = ({ visible, email, onVerified, onClose }) => {
+const OtpModal = ({ visible, email, onVerified, onClose, buttonText = "Verify & Create Store" }) => {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
 
@@ -344,7 +344,7 @@ const OtpModal = ({ visible, email, onVerified, onClose }) => {
                       : <>
                           <MaterialCommunityIcons name="check-circle" size={20} color="#fff" style={{ marginRight: 8 }} />
                           <Text style={{ color: '#fff', fontWeight: '900', fontSize: 15, letterSpacing: 1 }}>
-                            Verify & Create Store
+                            {buttonText}
                           </Text>
                         </>
                     }
