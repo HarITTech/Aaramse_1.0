@@ -55,7 +55,7 @@ export const sendEmail = async (mailOptions) => {
         body: JSON.stringify({
           sender: {
             name: 'AaramSe',
-            email: process.env.EMAIL_USER || 'harittechsolution@gmail.com',
+            email: process.env.SENDER_EMAIL || 'harittechsolution@gmail.com',
           },
           to: [{ email: to }],
           subject: subject,
@@ -81,7 +81,7 @@ export const sendEmail = async (mailOptions) => {
     console.log(`[Email] Sending via Nodemailer SMTP to ${to}...`);
     const transporter = await createTransporter();
     await transporter.sendMail({
-      from: `"AaramSe" <${process.env.EMAIL_USER}>`,
+      from: `"AaramSe" <${process.env.SENDER_EMAIL || 'harittechsolution@gmail.com'}>`,
       to: to,
       subject: subject,
       html: html,
