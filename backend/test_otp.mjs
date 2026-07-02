@@ -6,25 +6,27 @@ dotenv.config();
 
 console.log('📧 EMAIL_USER:', process.env.EMAIL_USER);
 console.log('🔑 EMAIL_PASS:', process.env.EMAIL_PASS ? '***set***' : '❌ NOT SET');
+console.log('🔌 SMTP_HOST:', process.env.SMTP_HOST);
 
 const lookupPromise = promisify(dns.lookup);
+const host = process.env.SMTP_HOST || 'smtp.gmail.com';
 
-let resolvedHost = 'smtp.gmail.com';
+let resolvedHost = host;
 try {
-  const lookupResult = await lookupPromise('smtp.gmail.com', { family: 4 });
+  const lookupResult = await lookupPromise(host, { family: 4 });
   resolvedHost = lookupResult.address;
-  console.log(`[DNS] Resolved smtp.gmail.com to IPv4: ${resolvedHost}`);
+  console.log(`[DNS] Resolved ${host} to IPv4: ${resolvedHost}`);
 } catch (err) {
-  console.error('[DNS] Failed to resolve to IPv4, falling back:', err.message);
+  console.error('[DNS] Failed to resolve, falling back:', err.message);
 }
 
 const transporter = nodemailer.createTransport({
   host: resolvedHost,
-  port: 587,
+  port: parseInt(process.env.SMTP_PORT) || 587,
   secure: false,
   tls: {
     rejectUnauthorized: false,
-    servername: 'smtp.gmail.com',
+    servername: host,
   },
   auth: {
     user: process.env.EMAIL_USER,
@@ -48,7 +50,7 @@ const testEmail = 'timepassvah@gmail.com';
 console.log(`\n📤 Sending OTP ${testOtp} to ${testEmail} ...`);
 try {
   const info = await transporter.sendMail({
-    from: `"AaramSe" <${process.env.EMAIL_USER}>`,
+    from: `"AaramSe" <harittechsolution@gmail.com>`,
     to: testEmail,
     subject: `${testOtp} is your AaramSe verification code`,
     text: `Your OTP is: ${testOtp}\nValid for 10 minutes.`,

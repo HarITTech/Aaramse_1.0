@@ -9,18 +9,19 @@ const lookupPromise = promisify(dns.lookup);
 
 // ── Transporter — Gmail SMTP port 587 STARTTLS ────────────────────────────────
 const createTransporter = async () => {
-  let resolvedHost = 'smtp.gmail.com';
+  const host = process.env.SMTP_HOST || 'smtp.gmail.com';
+  let resolvedHost = host;
   try {
-    const lookupResult = await lookupPromise('smtp.gmail.com', { family: 4 });
+    const lookupResult = await lookupPromise(host, { family: 4 });
     resolvedHost = lookupResult.address;
-    console.log(`[DNS] Resolved smtp.gmail.com to IPv4: ${resolvedHost}`);
+    console.log(`[DNS] Resolved ${host} to IPv4: ${resolvedHost}`);
   } catch (err) {
-    console.error('[DNS] Failed to resolve smtp.gmail.com, falling back:', err.message);
+    console.error(`[DNS] Failed to resolve ${host}, falling back:`, err.message);
   }
 
   return nodemailer.createTransport({
     host: resolvedHost,
-    port: 587,
+    port: parseInt(process.env.SMTP_PORT) || 587,
     secure: false,          // STARTTLS (not SSL)
     auth: {
       user: process.env.EMAIL_USER,
@@ -28,7 +29,7 @@ const createTransporter = async () => {
     },
     tls: {
       rejectUnauthorized: false,
-      servername: 'smtp.gmail.com',
+      servername: host,
     },
     // Force IPv4 — Render free tier blocks IPv6 outbound (ENETUNREACH)
     family: 4,
@@ -40,13 +41,55 @@ const createTransporter = async () => {
 
 // ── Generic send function ─────────────────────────────────────────────────────
 export const sendEmail = async (mailOptions) => {
+  const { to, subject, html } = mailOptions;
+
+  if (process.env.BREVO_API_KEY) {
+    console.log(`[Email] Sending via Brevo HTTP API to ${to}...`);
+    try {
+      const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST',
+        headers: {
+          'api-key': process.env.BREVO_API_KEY,
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          sender: {
+            name: 'AaramSe',
+            email: process.env.EMAIL_USER || 'harittechsolution@gmail.com',
+          },
+          to: [{ email: to }],
+          subject: subject,
+          htmlContent: html,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(JSON.stringify(errorData));
+      }
+
+      console.log(`[Email] Sent successfully via Brevo HTTP API to ${to}`);
+      return;
+    } catch (error) {
+      console.error('[Email] Brevo API Send failed:', error.message);
+      throw new Error('Error sending email via Brevo API: ' + error.message);
+    }
+  }
+
+  // Fallback to Nodemailer SMTP
   try {
+    console.log(`[Email] Sending via Nodemailer SMTP to ${to}...`);
     const transporter = await createTransporter();
-    await transporter.sendMail(mailOptions);
-    console.log(`[Email] Sent to ${mailOptions.to}`);
+    await transporter.sendMail({
+      from: `"AaramSe" <${process.env.EMAIL_USER}>`,
+      to: to,
+      subject: subject,
+      html: html,
+    });
+    console.log(`[Email] Sent successfully via Nodemailer SMTP to ${to}`);
   } catch (error) {
-    console.error('[Email] Send failed:', error.message);
-    throw new Error('Error sending email: ' + error.message);
+    console.error('[Email] Nodemailer SMTP Send failed:', error.message);
+    throw new Error('Error sending email via Nodemailer: ' + error.message);
   }
 };
 

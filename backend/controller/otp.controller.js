@@ -1,6 +1,7 @@
 import nodemailer from 'nodemailer';
 import dns from 'dns';
 import { promisify } from 'util';
+import { sendEmail } from '../middleware/emailService.js';
 
 /**
  * OTP Controller — Nodemailer with Gmail SMTP on port 587 (STARTTLS).
@@ -143,9 +144,7 @@ export const sendOtp = async (req, res) => {
   }, OTP_EXPIRY_MS);
 
   try {
-    const transporter = await createTransporter();
-    await transporter.sendMail({
-      from: `"AaramSe" <${process.env.EMAIL_USER}>`,
+    await sendEmail({
       to: normalizedEmail,
       subject: `${otp} is your AaramSe verification code`,
       html: getEmailTemplate(otp, normalizedEmail),
